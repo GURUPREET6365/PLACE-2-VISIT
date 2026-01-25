@@ -32,15 +32,21 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user: i
     # This is going to first convert into dict and then unpack it.
 
     # Checking that the place_name or place
-    print(current_user.email)
+    role = current_user.role
 
-    place = Place(**request.model_dump())
-    db.add(place)
-    db.commit()
-    # This refresh is for when the data is returned, then it will first refresh db and then return so that all data should go and this store the data in place
-    db.refresh(place)
-    return place
-
+    if role == 'staff' or role == 'admin':
+        place = Place(**request.model_dump())
+        db.add(place)
+        db.commit()
+        # This refresh is for when the data is returned, then it will first refresh db and then return so that all data should go and this store the data in place
+        db.refresh(place)
+        return place
+    
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authorized"
+        )
 
 @router.get('/place/{id}')
 def specfic_place(id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
@@ -55,26 +61,36 @@ def delete_place(id:int, db: Session = Depends(get_db), current_user: int = Depe
     place_query = db.query(Place).filter(Place.id == id) # This always return some query, so it can't be empty.
     # .first() always return orm, if found and none if not found.
     place = place_query.first()
-    print(place)
-    if not place:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
-    
-    else:
-        place_query.delete(synchronize_session=False)
-        print('This place is deleted.')
-        db.commit()
+    role = current_user.role
+    if role == 'staff' or role == 'admin':
+        if not place:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
+        
+        else:
+            place_query.delete(synchronize_session=False)
+            print('This place is deleted.')
+            db.commit()
 
-        return {'success':'The place has been deleted.'}
+            return {'success':'The place has been deleted.'}
+    else:
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authorized"
+        )
     
 @router.post('/place/update/{id}')
 def update_place(request:Places, id:int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     place_query = db.query(Place).filter(Place.id == id)
     place = place_query.first()
+    role = current_user.role
+    print(role)
+    if role == 'staff' or role == 'admin':
+        if not place:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
+        
+        place_query.update(request.model_dump(), synchronize_session=False)
+        db.commit()
 
-    if not place:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
-    
-    place_query.update(request.model_dump(), synchronize_session=False)
-    db.commit()
-
-    return {'success':'post updated.'}
+        return {'success':'post updated.'}
+    else:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter
 # This is pydantic, that used for the data defining that we will recieve from the client.
 from sqlalchemy.orm import Session
 # Creating the table that we created in model.py
@@ -11,7 +11,9 @@ from app.database.pydantic_models import UserResponse
 models.Base.metadata.create_all(bind=engine)
 from app.database.models import User
 # password hashing.
-from app.utilities.utils import get_hashed_password, check_password
+from app.utilities.utils import get_hashed_password
+from app.oauth2 import get_current_user
+
 
 router = APIRouter(
     prefix='/api',
@@ -19,23 +21,28 @@ router = APIRouter(
 )
 
 @router.post('/create/user', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
-def create_user(request:UserCreate ,db: Session = Depends(get_db)):
+def create_user(request:UserCreate ,db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
 
+    role = current_user.role
     # hashing the password.
-    hashed_password = get_hashed_password(request.password)
-    
-    request.password = hashed_password
+    if role == 'admin':
+        hashed_password = get_hashed_password(request.password)
+        
+        request.password = hashed_password
 
-    new_user = User(**request.model_dump())
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+        new_user = User(**request.model_dump())
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
 
-    return new_user
-
+        return new_user
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail = 'Not Authorized'
+        )
 
 @router.get('/get/user/{id}', response_model=UserResponse)
-def get_user(id:int, db: Session = Depends(get_db)):
+def get_user(id:int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     
     if not user:

@@ -24,11 +24,15 @@ class UserCreate(BaseModel):
     password:str
     first_name:str
     last_name:str
+    role:str = "user"
 
 
 class UserResponse(BaseModel):
     id:int
     email:EmailStr
+    first_name:str
+    last_name:str
+    role:str
     created_at:datetime
 
     class Config:

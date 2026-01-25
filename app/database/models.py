@@ -26,7 +26,8 @@ class User(Base):
     last_name = Column(String, nullable=False)
     role = Column(String, nullable=False, server_default="user")
     email = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)
+    password = Column(String, nullable=True)
+    provider = Column(String, nullable=False, server_default='local')
     places = relationship("Place", back_populates="user")
     created_at = Column(
         DateTime(timezone=True),
