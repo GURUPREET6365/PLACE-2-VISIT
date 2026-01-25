@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from app.database.database import get_db
 from app.database.models import User
 from app.utilities.utils import check_password
-from app.oauth2 import create_access_token
-from app.database.pydantic_models import Token
+from app.oauth2 import create_access_token, google_token_verification
+from app.database.pydantic_models import Token, GoogleAuthToken
 
 router = APIRouter(
     prefix='/api', 
@@ -37,5 +37,12 @@ def login(user_cred:OAuth2PasswordRequestForm=Depends() ,db: Session = Depends(g
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid Credentials')
 
     access_token = create_access_token(data={'user_id':user.id, 'email':user.email})
+    
+    return {'access_token':access_token, 'token_type':'bearer'}
+
+
+@router.post('/auth/google', response_model=Token)
+def google_auth(request:GoogleAuthToken, db: Session = Depends(get_db)):
+    access_token = google_token_verification(request.token, db)
     
     return {'access_token':access_token, 'token_type':'bearer'}

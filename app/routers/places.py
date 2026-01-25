@@ -25,9 +25,8 @@ def all_place(db: Session = Depends(get_db)):
     place = db.query(Place).all()
     return place
 
-
 @router.post('/add/place', status_code=status.HTTP_201_CREATED, response_model=responsePlace)
-def create_place(request: Places, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def create_place(request: Places, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     # print(request.model_dump())
     # This is going to first convert into dict and then unpack it.
 
@@ -44,12 +43,12 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user: i
     
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized"
         )
 
 @router.get('/place/{id}')
-def specfic_place(id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def specfic_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     place = db.query(Place).filter(Place.id == id).all()
     if not place:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -57,7 +56,7 @@ def specfic_place(id: int, db: Session = Depends(get_db), current_user: int = De
 
 
 @router.post('/place/delete/{id}')
-def delete_place(id:int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def delete_place(id:int, db: Session = Depends(get_db), current_user= Depends(get_current_user)):
     place_query = db.query(Place).filter(Place.id == id) # This always return some query, so it can't be empty.
     # .first() always return orm, if found and none if not found.
     place = place_query.first()
@@ -74,7 +73,7 @@ def delete_place(id:int, db: Session = Depends(get_db), current_user: int = Depe
             return {'success':'The place has been deleted.'}
     else:
         return HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized"
         )
     
@@ -83,7 +82,7 @@ def update_place(request:Places, id:int, db: Session = Depends(get_db), current_
     place_query = db.query(Place).filter(Place.id == id)
     place = place_query.first()
     role = current_user.role
-    print(role)
+    # print(role)
     if role == 'staff' or role == 'admin':
         if not place:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
@@ -93,4 +92,4 @@ def update_place(request:Places, id:int, db: Session = Depends(get_db), current_
 
         return {'success':'post updated.'}
     else:
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorized")
+        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")

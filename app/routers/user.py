@@ -21,31 +21,43 @@ router = APIRouter(
 )
 
 @router.post('/create/user', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
-def create_user(request:UserCreate ,db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def create_user(request:UserCreate ,db: Session = Depends(get_db), current_user = Depends(get_current_user)):
 
     role = current_user.role
     # hashing the password.
+    if db.query(User).filter(User.email == request.email).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Email already exists")
+    
     if role == 'admin':
         hashed_password = get_hashed_password(request.password)
         
         request.password = hashed_password
 
-        new_user = User(**request.model_dump())
+        new_user = User(
+            email=request.email,
+            password=hashed_password,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            role="staff"
+        )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-
+        
         return new_user
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail = 'Not Authorized'
+            status_code=status.HTTP_403_FORBIDDEN, detail = 'Not Authorized'
         )
 
 @router.get('/get/user/{id}', response_model=UserResponse)
-def get_user(id:int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def get_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     user = db.query(User).filter(User.id == id).first()
     
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'User with id {id} do not exists')
-    
     return user
+
+@router.get("/me")
+def me(current_user = Depends(get_current_user)):
+    return current_user

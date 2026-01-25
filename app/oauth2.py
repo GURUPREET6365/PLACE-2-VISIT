@@ -8,7 +8,8 @@ from fastapi.security import OAuth2PasswordBearer
 from app.database.database import get_db
 from sqlalchemy.orm import Session
 from app.database.models import User
-
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 # This is login, means this is the path where the dependency is for the token and passwordresetform, which is in login.
 """
@@ -38,6 +39,10 @@ SECRET_KEY=os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 720
 
+# For google auth
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+
+
 
 def create_access_token(data:dict):
     # storing the data into variable for to not lost while processing or manipulating
@@ -50,6 +55,7 @@ def create_access_token(data:dict):
     jwt_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     # print(jwt_token)
     return jwt_token
+
 
 # credentials_exceptions is the error, when it will cause. This is done for the code reusability.
 def verify_access_token(token:str, credentials_exception):
@@ -88,3 +94,59 @@ def get_current_user(token:str = Depends(oauth2_scheme), db: Session= Depends(ge
     current_user = db.query(User).filter(User.id == token.id).first()
 
     return current_user
+
+
+
+def google_token_verification(token:str, db: Session):
+    print('got token, now verifying...')
+    # Extracting the information from the token given by google.
+    request = requests.Request()
+    try:
+        print('verifiying token')
+        token_info = id_token.verify_oauth2_token(token, request, GOOGLE_CLIENT_ID)
+        
+        """
+        # print(token_info)
+        {'iss': 'https://accounts.google.com', 'azp': '788471062927-m9k1jhqtp4j1gr2be8fg4bga08mi4knd.apps.googleusercontent.com', 'aud': '788471062927-m9k1jhqtp4j1gr2be8fg4bga08mi4knd.apps.googleusercontent.com', 'sub': '108517204962045586134', 'email': 'streakmanager001@gmail.com', 'email_verified': True, 'nbf': 1769369179, 'name': 'Streak Manager', 'picture': 'https://lh3.googleusercontent.com/a/ACg8ocLM1jRuZwyU5xY5GkrajnKtPm1WqjMJAjL7rd-hDR_pUj3vYw=s96-c', 'given_name': 'Streak', 'family_name': 'Manager', 'iat': 1769369479, 'exp': 1769373079, 'jti': '842407703ec41d076b926174dd1a2e7bcc446d84'}
+        """
+
+    except Exception:
+        # print(error)
+        # print('Token got wrong')
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid Token')
+
+    sub = token_info["sub"]
+    email = token_info["email"]
+    first_name = token_info.get("given_name")
+    last_name = token_info.get("family_name")
+    profile_url = token_info.get("picture")
+
+    user = db.query(User).filter(User.google_sub == sub).first()
+    if user:
+        if email != user.email:
+            user.email = email
+            db.commit()
+            jwt_access_token = create_access_token(data={'user_id':user.id, 'email':user.email})
+            return jwt_access_token
+        
+        # If email is matched means the email will be same, user not updated their email.
+        jwt_access_token = create_access_token(data={'user_id':user.id, 'email':user.email})
+        return jwt_access_token
+    
+    # If user is not exists then create new user.
+    else:
+        create_user=User(
+            email=email, 
+            first_name=first_name,
+            google_sub=sub, 
+            last_name=last_name,
+            profile_url=profile_url,
+            provider='google'
+        )
+        db.add(create_user)
+        db.commit()
+        db.refresh(create_user)
+
+        jwt_access_token = create_access_token(data={'user_id':create_user.id, 'email':create_user.email})
+        return jwt_access_token
+        

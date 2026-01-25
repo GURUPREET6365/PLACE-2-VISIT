@@ -24,7 +24,6 @@ class UserCreate(BaseModel):
     password:str
     first_name:str
     last_name:str
-    role:str = "user"
 
 
 class UserResponse(BaseModel):
@@ -46,3 +45,6 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: int
     email: EmailStr
+
+class GoogleAuthToken(BaseModel):
+    token:str
