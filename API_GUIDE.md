@@ -1,6 +1,6 @@
 # P2V API Guide 📖
 
-Complete API reference for the P2V (Places to Visit) tourism platform.
+Complete API reference for the P2V (Places to Visit) tourism platform - Your gateway to authentic Indian tourism experiences.
 
 ## 📋 Table of Contents
 
@@ -12,6 +12,8 @@ Complete API reference for the P2V (Places to Visit) tourism platform.
 6. [Error Handling](#error-handling)
 7. [Rate Limiting](#rate-limiting)
 8. [Examples](#examples)
+9. [Best Practices](#best-practices)
+10. [SDK & Libraries](#sdk--libraries)
 
 ---
 
@@ -30,6 +32,20 @@ http://localhost:8000/api
 Most endpoints require JWT token authentication:
 ```http
 Authorization: Bearer <your-jwt-token>
+```
+
+### API Versioning
+Current version: `v1` (implicit in all endpoints)
+
+### Response Format
+All API responses follow a consistent structure:
+```json
+{
+  "data": { ... },           // Response data
+  "success": true,           // Operation status
+  "message": "Success",      // Human-readable message
+  "timestamp": "2024-01-15T10:30:00Z"
+}
 ```
 
 ---
@@ -431,40 +447,74 @@ curl -X POST "http://localhost:8000/api/place/delete/1" \
 
 ## ⭐ Voting System
 
-*Note: The voting system is currently under development. Below are the planned endpoints:*
-
 ### 1. Vote on Place
 
-**Endpoint:** `POST /api/vote/place/{id}` *(Coming Soon)*
+**Endpoint:** `POST /api/add/vote/{user_id}/{place_id}`
 
-**Description:** Vote (like/dislike) on a place
+**Description:** Add or update a vote (like/dislike) on a place. Users can like, dislike, or remove their vote.
 
 **Authorization:** Required
 
 **Path Parameters:**
-- `id` (integer): Place ID
+- `user_id` (integer): ID of the user voting
+- `place_id` (integer): ID of the place being voted on
 
 **Request Body:**
 ```json
 {
-  "vote": true,
-  "pincode": 110001
+  "vote": true
 }
 ```
+
+**Vote Values:**
+- `true`: Like the place
+- `false`: Dislike the place  
+- `null`: Remove/neutral vote
 
 **Response:**
 ```json
 {
-  "success": "Vote recorded successfully",
-  "vote_id": 1
+  "success": true
 }
 ```
 
-### 2. Get Place Ratings
+**Status Codes:**
+- `200`: Vote recorded/updated successfully
+- `401`: Unauthorized
+- `404`: User or place not found
+- `422`: Validation error
 
-**Endpoint:** `GET /api/place/{id}/ratings` *(Coming Soon)*
+**Example cURL:**
+```bash
+# Like a place
+curl -X POST "http://localhost:8000/api/add/vote/1/5" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"vote": true}'
 
-**Description:** Get aggregated ratings for a place
+# Dislike a place
+curl -X POST "http://localhost:8000/api/add/vote/1/5" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"vote": false}'
+
+# Remove vote (neutral)
+curl -X POST "http://localhost:8000/api/add/vote/1/5" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"vote": null}'
+```
+
+**Behavior:**
+- **First Vote**: Creates a new vote record
+- **Update Vote**: Updates existing vote if user has already voted on this place
+- **Smart Logic**: Automatically handles vote creation and updates
+
+### 2. Get Place Ratings *(Coming Soon)*
+
+**Endpoint:** `GET /api/place/{id}/ratings`
+
+**Description:** Get aggregated ratings and vote statistics for a place
 
 **Authorization:** Required
 
@@ -476,11 +526,10 @@ curl -X POST "http://localhost:8000/api/place/delete/1" \
   "likes": 120,
   "dislikes": 30,
   "rating_percentage": 80.0,
-  "ratings": {
-    "behavior": 4.2,
-    "facilities": 3.8,
-    "cleanliness": 4.0,
-    "overall": 4.0
+  "user_vote": true,
+  "vote_breakdown": {
+    "likes_percentage": 80.0,
+    "dislikes_percentage": 20.0
   }
 }
 ```
@@ -603,19 +652,30 @@ curl -X POST "http://localhost:8000/api/add/place" \
   }'
 ```
 
-#### 3. User Views Places
+#### 3. User Votes on Places
 ```bash
-# Get all places (no auth required)
-curl -X GET "http://localhost:8000/api/all/place"
-
 # Login as user
 curl -X POST "http://localhost:8000/api/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=user@example.com&password=userpass"
 
-# Get specific place
-curl -X GET "http://localhost:8000/api/place/1" \
-  -H "Authorization: Bearer user-token"
+# Like a place
+curl -X POST "http://localhost:8000/api/add/vote/1/1" \
+  -H "Authorization: Bearer user-token" \
+  -H "Content-Type: application/json" \
+  -d '{"vote": true}'
+
+# Change to dislike
+curl -X POST "http://localhost:8000/api/add/vote/1/1" \
+  -H "Authorization: Bearer user-token" \
+  -H "Content-Type: application/json" \
+  -d '{"vote": false}'
+
+# Remove vote (neutral)
+curl -X POST "http://localhost:8000/api/add/vote/1/1" \
+  -H "Authorization: Bearer user-token" \
+  -H "Content-Type: application/json" \
+  -d '{"vote": null}'
 ```
 
 ### Google OAuth Example
@@ -687,6 +747,15 @@ class P2VClient:
         )
         return response.json()
     
+    def vote_on_place(self, user_id, place_id, vote):
+        """Vote on a place (True=like, False=dislike, None=neutral)"""
+        response = requests.post(
+            f"{self.base_url}/add/vote/{user_id}/{place_id}",
+            json={"vote": vote},
+            headers=self.get_headers()
+        )
+        return response.json()
+    
     def get_current_user(self):
         """Get current user info"""
         response = requests.get(
@@ -697,19 +766,25 @@ class P2VClient:
 
 # Usage example
 client = P2VClient()
-if client.login("staff@example.com", "password123"):
+if client.login("user@example.com", "password123"):
     places = client.get_all_places()
     print(f"Found {len(places)} places")
     
-    # Add new place
-    new_place = {
-        "place_name": "Qutub Minar",
-        "place_address": "Seth Sarai, Mehrauli, New Delhi",
-        "pincode": 110030,
-        "user_id": 2
-    }
-    result = client.add_place(new_place)
-    print("Place added:", result)
+    # Vote on a place
+    user_info = client.get_current_user()
+    user_id = user_info["id"]
+    
+    # Like place with ID 1
+    vote_result = client.vote_on_place(user_id, 1, True)
+    print("Vote result:", vote_result)
+    
+    # Change to dislike
+    vote_result = client.vote_on_place(user_id, 1, False)
+    print("Updated vote:", vote_result)
+    
+    # Remove vote
+    vote_result = client.vote_on_place(user_id, 1, None)
+    print("Removed vote:", vote_result)
 ```
 
 ---
@@ -774,4 +849,132 @@ For API-related questions:
 
 ---
 
+## 💡 Best Practices
+
+### Authentication
+- **Store tokens securely**: Use secure storage (keychain, encrypted storage)
+- **Handle token expiration**: Implement automatic token refresh
+- **Logout properly**: Clear tokens on logout
+
+```javascript
+// Good: Secure token storage
+localStorage.setItem('p2v_token', token); // For web apps
+// Better: Use secure storage libraries for mobile apps
+```
+
+### API Usage
+- **Use appropriate HTTP methods**: GET for reading, POST for creating/updating
+- **Handle errors gracefully**: Always check response status codes
+- **Implement retry logic**: For network failures with exponential backoff
+
+```python
+import time
+import requests
+
+def api_call_with_retry(url, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.json()
+        except requests.RequestException:
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # Exponential backoff
+            else:
+                raise
+```
+
+### Data Validation
+- **Validate input**: Always validate data before sending to API
+- **Handle edge cases**: Empty responses, null values, etc.
+- **Use proper data types**: Ensure integers for IDs, strings for text
+
+### Performance
+- **Cache responses**: Cache frequently accessed data like places list
+- **Paginate large datasets**: Request data in chunks when available
+- **Minimize API calls**: Batch operations when possible
+
+---
+
+## 🛠️ SDK & Libraries
+
+### Official Python SDK *(Coming Soon)*
+```python
+from p2v_sdk import P2VClient
+
+client = P2VClient(api_key="your-api-key")
+places = client.places.get_all()
+```
+
+### JavaScript/TypeScript SDK *(Coming Soon)*
+```typescript
+import { P2VClient } from '@p2v/sdk';
+
+const client = new P2VClient({ apiKey: 'your-api-key' });
+const places = await client.places.getAll();
+```
+
+### Community Libraries
+- **React Hooks**: `use-p2v-api` - React hooks for P2V API
+- **Vue Composables**: `vue-p2v` - Vue 3 composables
+- **Flutter Package**: `p2v_flutter` - Flutter integration
+
+### Postman Collection
+Import our official Postman collection:
+```
+https://api.p2v.com/postman/collection.json
+```
+
+---
+
+## � Quick Reference
+
+### Authentication Flow
+```
+1. POST /api/login → Get token
+2. Use token in Authorization header
+3. Access protected endpoints
+```
+
+### User Roles & Permissions
+| Role | Add Places | Vote | Create Users | Delete Places |
+|------|------------|------|--------------|---------------|
+| User | ❌ | ✅ | ❌ | ❌ |
+| Staff | ✅ | ✅ | ❌ | ✅ |
+| Admin | ✅ | ✅ | ✅ | ✅ |
+
+### Common Status Codes
+| Code | Meaning | Action |
+|------|---------|--------|
+| 200 | Success | Continue |
+| 201 | Created | Resource created successfully |
+| 401 | Unauthorized | Check/refresh token |
+| 403 | Forbidden | Check user permissions |
+| 404 | Not Found | Verify resource exists |
+| 422 | Validation Error | Fix request data |
+
+---
+
+## 🤝 Support & Community
+
+### Getting Help
+- **Documentation**: `http://localhost:8000/docs`
+- **GitHub Issues**: Report bugs and request features
+- **Community Forum**: Join discussions with other developers
+- **Email Support**: api-support@p2v.com
+
+### Contributing
+- **API Feedback**: Help us improve the API
+- **Documentation**: Contribute to docs and examples
+- **SDKs**: Build community SDKs and libraries
+
+### Stay Updated
+- **Changelog**: Track API updates and changes
+- **Newsletter**: Get notified about new features
+- **Social Media**: Follow @P2V_API for updates
+
+---
+
 **Happy coding! 🚀**
+
+*Building the future of Indian tourism, one API call at a time.*

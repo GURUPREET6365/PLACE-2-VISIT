@@ -26,14 +26,11 @@ class Votes(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    place_id = Column(Integer, ForeignKey("places.id", ondelete="CASCADE"), 
-    nullable=False)
+    place_id = Column(Integer, ForeignKey("places.id", ondelete="CASCADE"), nullable=False)
 
-    vote= Column(Boolean, nullable=False)
+    vote= Column(Boolean, nullable=True)
 
     user = relationship("User", back_populates="votes")
-
-    pincode = Column(Integer, nullable=False)
 
     voted_at = Column(
         DateTime(timezone=True),

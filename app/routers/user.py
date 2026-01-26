@@ -58,6 +58,7 @@ def get_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_c
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'User with id {id} do not exists')
     return user
 
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 def me(current_user = Depends(get_current_user)):
+    
     return current_user

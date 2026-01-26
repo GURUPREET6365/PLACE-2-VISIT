@@ -25,13 +25,14 @@ P2V (Places to Visit) addresses the gap in India's tourism sector by providing a
 - **Location-based Organization**: Pincode-based categorization
 
 ### ⭐ Rating & Review System
-- **User Voting**: Like/dislike system for places
-- **Multi-dimensional Ratings**: Rate places on various aspects:
+- **User Voting**: Like/dislike system for places (✅ **IMPLEMENTED**)
+- **Smart Vote Management**: Users can change or remove their votes
+- **Community Feedback**: Real reviews from actual visitors
+- **Multi-dimensional Ratings**: *(Coming Soon)* Rate places on various aspects:
   - People behavior and hospitality
   - Facilities and amenities
   - Cleanliness and maintenance
   - Overall experience
-- **Community Feedback**: Real reviews from actual visitors
 
 ### 👥 User Management
 - **Profile Management**: User profiles with Google integration support
@@ -248,26 +249,50 @@ Authorization: Bearer <staff-or-admin-token>
 
 ---
 
-## ⭐ Voting System (Coming Soon)
+## ⭐ Voting System ✅
 
-The voting system allows users to rate places on multiple dimensions:
+The voting system allows users to like, dislike, or remain neutral on places:
 
 ### Vote on a Place
 ```http
-POST /api/vote/place/{place_id}
+POST /api/add/vote/{user_id}/{place_id}
 Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "vote": true,  // true for like, false for dislike
-  "pincode": 110001
+  "vote": true  // true for like, false for dislike, null for neutral
 }
 ```
 
-### Get Place Ratings
+**Response:**
+```json
+{
+  "success": true
+}
+```
+
+### Voting Features
+- **Smart Vote Management**: Users can change their vote anytime
+- **Three States**: Like (true), Dislike (false), Neutral (null)
+- **Automatic Updates**: System handles vote creation and updates seamlessly
+- **User-Specific**: Each user can only have one vote per place
+
+### Get Place Ratings *(Coming Soon)*
 ```http
 GET /api/place/{place_id}/ratings
 Authorization: Bearer <token>
+```
+
+**Planned Response:**
+```json
+{
+  "place_id": 1,
+  "total_votes": 150,
+  "likes": 120,
+  "dislikes": 30,
+  "rating_percentage": 80.0,
+  "user_vote": true
+}
 ```
 
 ---
@@ -312,8 +337,7 @@ Authorization: Bearer <your-jwt-token>
 - `id`: Primary key
 - `user_id`: Foreign key to voting user
 - `place_id`: Foreign key to rated place
-- `vote`: Boolean (true for like, false for dislike)
-- `pincode`: Location pincode
+- `vote`: Boolean (true for like, false for dislike, null for neutral)
 - `voted_at`: Vote timestamp
 
 ---

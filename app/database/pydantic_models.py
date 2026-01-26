@@ -12,7 +12,6 @@ class Places(BaseModel):
 class responsePlace(Places):
     id:int
     created_at:datetime
-    success: bool = True
 
     class Config:
         from_attributes = True
@@ -29,8 +28,10 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id:int
     email:EmailStr
-    first_name:str
-    last_name:str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    profile_url: Optional[str] = None
+    provider: Optional[str] = None
     role:str
     created_at:datetime
 
@@ -48,3 +49,7 @@ class TokenData(BaseModel):
 
 class GoogleAuthToken(BaseModel):
     token:str
+
+
+class VoteRequest(BaseModel):
+    vote: bool | None = None

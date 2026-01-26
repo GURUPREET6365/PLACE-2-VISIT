@@ -11,7 +11,7 @@ from app.database.pydantic_models import Places, UserCreate
 # This is the pydantic response model
 from app.database.pydantic_models import responsePlace
 models.Base.metadata.create_all(bind=engine)
-from app.database.models import Place
+from app.database.models import Place, Votes
 from app.oauth2 import get_current_user
 
 router = APIRouter(
@@ -50,9 +50,10 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user = 
 @router.get('/place/{id}')
 def specfic_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     place = db.query(Place).filter(Place.id == id).all()
+    vote = db.query(Votes).filter(Votes.user_id == current_user.id, Votes.place_id == id).first()
     if not place:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return {'place':place} 
+    return {'place':place, 'vote':vote.vote} 
 
 
 @router.post('/place/delete/{id}')
