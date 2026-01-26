@@ -403,15 +403,6 @@ We welcome contributions to improve P2V! Here's how you can help:
 }
 ```
 
-### Common HTTP Status Codes
-- `200`: Success
-- `201`: Created
-- `400`: Bad Request
-- `401`: Unauthorized
-- `403`: Forbidden
-- `404`: Not Found
-- `422`: Validation Error
-- `500`: Internal Server Error
 
 ---
 
@@ -441,13 +432,6 @@ We welcome contributions to improve P2V! Here's how you can help:
 For support and questions:
 - **Issues**: Create an issue on GitHub
 - **Documentation**: Check the API docs at `/docs`
-- **Community**: Join our discussions
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
