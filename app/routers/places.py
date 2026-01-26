@@ -9,7 +9,7 @@ from app.database.database import engine, get_db
 # This is the pydantic validation model
 from app.database.pydantic_models import Places, UserCreate
 # This is the pydantic response model
-from app.database.pydantic_models import responsePlace, UserResponse
+from app.database.pydantic_models import responsePlace
 models.Base.metadata.create_all(bind=engine)
 from app.database.models import Place
 from app.oauth2 import get_current_user

@@ -19,6 +19,27 @@ class Place(Base):
         server_default=func.now()
     )
 
+class Votes(Base):
+    __tablename__ = 'votes'
+    
+    id = Column(Integer, primary_key=True, nullable=False , index=True)
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    place_id = Column(Integer, ForeignKey("places.id", ondelete="CASCADE"), 
+    nullable=False)
+
+    vote= Column(Boolean, nullable=False)
+
+    user = relationship("User", back_populates="votes")
+
+    pincode = Column(Integer, nullable=False)
+
+    voted_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, nullable=False , index=True)
@@ -30,6 +51,7 @@ class User(Base):
     provider = Column(String, nullable=False, server_default='local')
     google_sub = Column(String, unique=True, nullable=True)
     places = relationship("Place", back_populates="user")
+    votes = relationship("Votes", back_populates="user")
     profile_url = Column(String, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
