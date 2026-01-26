@@ -6,6 +6,7 @@ from typing import Optional
 class Places(BaseModel):
     place_name:str
     place_address:str
+    about_place:str
     pincode:int
     user_id:int
 

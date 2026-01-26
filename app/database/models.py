@@ -11,6 +11,7 @@ class Place(Base):
     id = Column(Integer, primary_key=True, nullable=False , index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     place_name = Column(String, nullable=False)
+    about_place = Column(String, nullable=True)
     place_address = Column(String, nullable=False)
     user = relationship("User", back_populates="places")
     pincode = Column(Integer, nullable=False)
