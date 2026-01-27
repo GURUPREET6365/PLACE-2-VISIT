@@ -98,11 +98,11 @@ def get_current_user(token:str = Depends(oauth2_scheme), db: Session= Depends(ge
 
 
 def google_token_verification(token:str, db: Session):
-    print('got token, now verifying...')
+    # print('got token, now verifying...')
     # Extracting the information from the token given by google.
     request = requests.Request()
     try:
-        print('verifiying token')
+        # print('verifiying token')
         token_info = id_token.verify_oauth2_token(token, request, GOOGLE_CLIENT_ID)
         
         """

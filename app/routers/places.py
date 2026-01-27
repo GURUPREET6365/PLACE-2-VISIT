@@ -51,9 +51,13 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user = 
 def specfic_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     place = db.query(Place).filter(Place.id == id).all()
     vote = db.query(Votes).filter(Votes.user_id == current_user.id, Votes.place_id == id).first()
+    is_voted = None
+
+    if vote:
+        is_voted = vote.vote
     if not place:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return {'place':place, 'vote':vote.vote} 
+    return {'place':place, 'vote':is_voted} 
 
 
 @router.post('/place/delete/{id}')
