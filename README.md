@@ -59,7 +59,7 @@ P2V (Places to Visit) addresses the gap in India's tourism sector by providing a
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>
-cd P2V
+cd PLACE_TO_VISIT
 ```
 
 ### 2. Set Up Virtual Environment
@@ -446,3 +446,4 @@ For support and questions:
 **Made with ❤️ for Indian Tourism**
 
 *Helping travelers discover authentic places across incredible India!*
+
