@@ -4,10 +4,7 @@
 import bcrypt
 
 def get_hashed_password(plain_password: str) -> bytes:
-    return bcrypt.hashpw(
-        plain_password.encode("utf-8"),
-        bcrypt.gensalt()
-    ).decode("utf-8")
+    return bcrypt.hashpw(plain_password.encode("utf-8"),bcrypt.gensalt())
 
 def check_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(

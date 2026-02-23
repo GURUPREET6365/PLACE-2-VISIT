@@ -34,6 +34,7 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user = 
     role = current_user.role
 
     if role == 'staff' or role == 'admin':
+        request.user_id = current_user.id
         place = Place(**request.model_dump())
         db.add(place)
         db.commit()

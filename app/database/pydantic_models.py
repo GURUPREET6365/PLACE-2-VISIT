@@ -8,7 +8,8 @@ class Places(BaseModel):
     place_address:str
     about_place:str
     pincode:int
-    user_id:int
+    user_id: Optional[int] = None
+
 
 class responsePlace(Places):
     id:int
@@ -25,6 +26,10 @@ class UserCreate(BaseModel):
     first_name:str
     last_name:str
 
+# This is the login model for taking the data from the staff....
+class LoginUser(BaseModel):
+    email:EmailStr
+    password:str
 
 class UserResponse(BaseModel):
     id:int
@@ -50,7 +55,6 @@ class TokenData(BaseModel):
 
 class GoogleAuthToken(BaseModel):
     token:str
-
 
 class VoteRequest(BaseModel):
     vote: bool | None = None
