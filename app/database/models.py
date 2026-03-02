@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy import text
 
 # This is the table for the places.
 class Place(Base):
@@ -43,7 +44,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, nullable=False , index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
-    role = Column(String, nullable=False, server_default="user")
+    is_staff = Column(Boolean, nullable=False, server_default=text("false"))
+    is_superuser = Column(Boolean, nullable=False, server_default=text("false"))
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=True)
     provider = Column(String, nullable=False, server_default='local')

@@ -19,6 +19,11 @@ login is only indicates that you will get the token at login, that's it.
 """
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
+"""
+oauth2_scheme that we created forces to have token and for the places we don't want as for the unauthorized user we will directly give the place and for authorized, we will give their voting also...
+"""
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl='login', auto_error=False)
+
 load_dotenv()
 
 """
@@ -94,6 +99,21 @@ def get_current_user(token:str = Depends(oauth2_scheme), db: Session= Depends(ge
     current_user = db.query(User).filter(User.id == token.id).first()
 
     return current_user
+
+# This is for the place and this will take the token if available and if not then it will not take.
+def get_current_user_optional(token:str = Depends(oauth2_scheme_optional), db:Session = Depends(get_db)):
+    if token:
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Could not validate credentials',
+            headers={"WWW-Authenticate": "Bearer"})
+        user = verify_access_token(token, credentials_exception)
+        current_user = db.query(User).filter(User.id == user.id).first()
+        # .first used as it returns none if no data found
+        if current_user:
+            return current_user
+        else:
+            return None
+
 
 
 

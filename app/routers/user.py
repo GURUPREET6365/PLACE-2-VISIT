@@ -20,7 +20,7 @@ router = APIRouter(
     tags=['Users']
 )
 
-@router.post('/create/user', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
+@router.post( '/create/user', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request:UserCreate ,db: Session = Depends(get_db)):
 
     if db.query(User).filter(User.email == request.email).first():
@@ -32,8 +32,7 @@ def create_user(request:UserCreate ,db: Session = Depends(get_db)):
         email=request.email,
         password=hashed_password,
         first_name=request.first_name,
-        last_name=request.last_name,
-        role="staff"
+        last_name=request.last_name
     )
     db.add(new_user)
     db.commit()
@@ -42,13 +41,13 @@ def create_user(request:UserCreate ,db: Session = Depends(get_db)):
     return new_user
 
 
-@router.get('/get/user/{id}', response_model=UserResponse)
-def get_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    user = db.query(User).filter(User.id == id).first()
-    
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'User with id {id} do not exists')
-    return user
+# @router.get('/get/user/{id}', response_model=UserResponse)
+# def get_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+#     user = db.query(User).filter(User.id == id).first()
+#
+#     if not user:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'User with id {id} do not exists')
+#     return user
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user = Depends(get_current_user)):

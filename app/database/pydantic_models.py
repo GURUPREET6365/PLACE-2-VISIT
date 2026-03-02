@@ -18,6 +18,17 @@ class responsePlace(Places):
     class Config:
         from_attributes = True
 
+class AllPlaceResponse(BaseModel):
+    place_name:str
+    place_address:str
+    about_place:str
+    pincode:int
+    id:int
+    voted:bool | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 # users
 class UserCreate(BaseModel):
@@ -38,7 +49,6 @@ class UserResponse(BaseModel):
     last_name: Optional[str] = None
     profile_url: Optional[str] = None
     provider: Optional[str] = None
-    role:str
     created_at:datetime
 
     class Config:

@@ -9,10 +9,11 @@ from app.database.database import engine, get_db
 # This is the pydantic validation model
 from app.database.pydantic_models import Places, UserCreate
 # This is the pydantic response model
-from app.database.pydantic_models import responsePlace
+from app.database.pydantic_models import responsePlace, AllPlaceResponse
 models.Base.metadata.create_all(bind=engine)
 from app.database.models import Place, Votes
-from app.oauth2 import get_current_user
+from app.oauth2 import get_current_user, get_current_user_optional
+from sqlalchemy import and_
 
 router = APIRouter(
     prefix='/api',
@@ -20,10 +21,49 @@ router = APIRouter(
 )
 
 # This is returning a list so we need to use List from typing library.
-@router.get('/all/place', status_code=status.HTTP_200_OK, response_model=List[responsePlace])
-def all_place(db: Session = Depends(get_db)):
-    place = db.query(Place).all()
-    return place
+@router.get('/all/place', status_code=status.HTTP_200_OK, response_model=List[AllPlaceResponse])
+def all_place(db: Session = Depends(get_db), current_user = Depends(get_current_user_optional)):
+    if current_user:
+        user_id = current_user.id
+        place = db.query(Place).all()
+        vote = db.query(Votes).filter(Votes.user_id == user_id).all()
+
+        # Now I am here creating a list of JSON structure so that I can store in the format that which place has vote
+        place_with_vote = []
+        # iterating the place and then extracting information.
+        for place_row in place:
+            place_id = place_row.id
+            is_voted = db.query(Votes).filter(and_(Votes.user_id==user_id, Votes.place_id==place_id)).first()
+            if is_voted:
+                place_with_vote.append({
+                    "place_name":place_row.place_name,
+                    "place_address":place_row.place_address,
+                    "about_place":place_row.about_place,
+                    "pincode":place_row.pincode,
+                    "created_at":place_row.created_at,
+                    "id": place_id,
+                    "voted": is_voted.vote,
+                })
+            else:
+                place_with_vote.append({
+                    "place_name": place_row.place_name,
+                    "place_address": place_row.place_address,
+                    "about_place": place_row.about_place,
+                    "pincode": place_row.pincode,
+                    "created_at": place_row.created_at,
+                    "id": place_id,
+                    "voted": None
+                })
+
+
+        return place_with_vote
+    else:
+        place = db.query(Place).all()
+        return place
+
+"""
+Depends is the function which tells that first run and give me the result then run next function.
+"""
 
 @router.post('/add/place', status_code=status.HTTP_201_CREATED, response_model=responsePlace)
 def create_place(request: Places, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
@@ -31,22 +71,21 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user = 
     # This is going to first convert into dict and then unpack it.
 
     # Checking that the place_name or place
-    role = current_user.role
+    # role = current_user.role
 
-    if role == 'staff' or role == 'admin':
-        request.user_id = current_user.id
-        place = Place(**request.model_dump())
-        db.add(place)
-        db.commit()
-        # This refresh is for when the data is returned, then it will first refresh db and then return so that all data should go and this store the data in place
-        db.refresh(place)
-        return place
+    request.user_id = current_user.id
+    place = Place(**request.model_dump())
+    db.add(place)
+    db.commit()
+    # This refresh is for when the data is returned, then it will first refresh db and then return so that all data should go and this store the data in place
+    db.refresh(place)
+    return place
     
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized"
-        )
+    # else:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="Not authorized"
+    #     )
 
 @router.get('/place/{id}')
 def specfic_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
@@ -99,3 +138,7 @@ def update_place(request:Places, id:int, db: Session = Depends(get_db), current_
         return {'success':'post updated.'}
     else:
         return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+
+# @router.get('/places/search/')
+# def search_place(search:str = None, db: Session = Depends(get_db), current_user = Depends(get_current_user_optional)):
