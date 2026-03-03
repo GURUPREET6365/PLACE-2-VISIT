@@ -5,12 +5,26 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy import text
 
+"""
+creator_id = Column(
+    Integer,
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True
+)
+
+You are telling PostgreSQL:
+
+If the referenced user row is deleted,
+then instead of deleting this row,
+set creator_id to NULL.
+"""
+
 # This is the table for the places.
 class Place(Base):
     __tablename__ = 'places'
     
     id = Column(Integer, primary_key=True, nullable=False , index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
     place_name = Column(String, nullable=False)
     about_place = Column(String, nullable=True)
     place_address = Column(String, nullable=False)
@@ -44,8 +58,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, nullable=False , index=True)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
-    is_staff = Column(Boolean, nullable=False, server_default=text("false"))
-    is_superuser = Column(Boolean, nullable=False, server_default=text("false"))
+    role = Column(String, default='user', nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=True)
     provider = Column(String, nullable=False, server_default='local')

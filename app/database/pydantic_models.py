@@ -45,8 +45,7 @@ class LoginUser(BaseModel):
 class UserResponse(BaseModel):
     id:int
     email:EmailStr
-    is_staff:bool
-    is_superuser:bool
+    role:str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     profile_url: Optional[str] = None

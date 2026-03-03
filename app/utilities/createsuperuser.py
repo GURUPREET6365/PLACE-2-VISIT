@@ -36,7 +36,7 @@ def createsuperuser():
         print('superuser already exists')
 
     else:
-        superuser = User(first_name=first_name,last_name=last_name,email=email,password=get_hashed_password(password),is_superuser=True, is_staff=True)
+        superuser = User(first_name=first_name,last_name=last_name,email=email,password=get_hashed_password(password),role='admin')
         db.add(superuser)
         db.commit()
         db.close()
