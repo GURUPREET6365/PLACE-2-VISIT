@@ -24,7 +24,7 @@ class Place(Base):
     __tablename__ = 'places'
     
     id = Column(Integer, primary_key=True, nullable=False , index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     place_name = Column(String, nullable=False)
     about_place = Column(String, nullable=True)
     place_address = Column(String, nullable=False)

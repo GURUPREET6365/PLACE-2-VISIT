@@ -8,15 +8,23 @@ class Places(BaseModel):
     place_address:str
     about_place:str
     pincode:int
-    user_id: Optional[int] = None
+    user_id: int
+
+# This is for the place update request model by the admin/staff
+class AdminUpdatePlace(BaseModel):
+    place_name:str
+    place_address:str
+    about_place:str
+    pincode:int
 
 
-class responsePlace(Places):
+# This model is for the admin/staff response.
+class AdminPlaceResponse(Places):
     id:int
-    created_at:datetime
-
     class Config:
-        from_attributes = True
+        orm_mode = True
+# Here orm_mode is true because when i am taking all the place from db, and direct sending as a list using pydantic, pydantic need to confirm that I can use orm to extract data.
+
 
 class AllPlaceResponse(BaseModel):
     place_name:str

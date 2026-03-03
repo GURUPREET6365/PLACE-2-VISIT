@@ -98,6 +98,8 @@ def get_current_user(token:str = Depends(oauth2_scheme), db: Session= Depends(ge
     # print('The token.id is', token.id)
     current_user = db.query(User).filter(User.id == token.id).first()
 
+    if current_user is None:
+        raise credentials_exception
     return current_user
 
 # This is for the place and this will take the token if available and if not then it will not take.

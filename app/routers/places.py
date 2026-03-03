@@ -9,7 +9,7 @@ from app.database.database import engine, get_db
 # This is the pydantic validation model
 from app.database.pydantic_models import Places
 # This is the pydantic response model
-from app.database.pydantic_models import responsePlace, AllPlaceResponse
+from app.database.pydantic_models import AllPlaceResponse, AdminUpdatePlace
 from app.database.models import Place, Votes
 from app.oauth2 import get_current_user, get_current_user_optional
 from sqlalchemy import and_
@@ -68,26 +68,26 @@ def all_place(db: Session = Depends(get_db), current_user = Depends(get_current_
 Depends is the function which tells that first run and give me the result then run next function.
 """
 
-@router.post('/add/place', status_code=status.HTTP_201_CREATED, response_model=responsePlace)
+@router.post('/add/place', status_code=status.HTTP_201_CREATED)
 def create_place(request: Places, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     # print(request.model_dump())
     # This is going to first convert into dict and then unpack it.
 
     # Checking that the place_name or place
-    # role = current_user.role
-    request.user_id = current_user.id
-    place = Place(**request.model_dump())
-    db.add(place)
-    db.commit()
-    # This refresh is for when the data is returned, then it will first refresh db and then return so that all data should go and this store the data in place
-    db.refresh(place)
-    return place
-    
-    # else:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail="Not authorized"
-    #     )
+    role = current_user.role
+    if role == 'staff' or role == 'admin':
+        place = Place(**request.model_dump())
+        db.add(place)
+        db.commit()
+        # This refresh is for when the data is returned, then it will first refresh db and then return so that all data should go and this store the data in place.
+        db.refresh(place)
+        return {"message":"place created successfully"}
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        )
 
 @router.get('/place/{id}', response_model=AllPlaceResponse)
 def specific_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
@@ -127,16 +127,15 @@ def specific_place(id: int, db: Session = Depends(get_db), current_user = Depend
 
 @router.post('/place/delete/{id}')
 def delete_place(id:int, db: Session = Depends(get_db), current_user= Depends(get_current_user)):
-    place_query = db.query(Place).filter(Place.id == id) # This always return some query, so it can't be empty.
+    place = db.query(Place).filter(Place.id == id).first() # This always return some query, so it can't be empty.
     # .first() always return orm, if found and none if not found.
-    place = place_query.first()
     role = current_user.role
-    if role == 'staff' or role == 'admin':
+    if role == 'admin':
         if not place:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
         
         else:
-            place_query.delete(synchronize_session=False)
+            db.delete(place)
             print('This place is deleted.')
             db.commit()
 
@@ -147,8 +146,8 @@ def delete_place(id:int, db: Session = Depends(get_db), current_user= Depends(ge
             detail="Not authorized"
         )
     
-@router.post('/place/update/{id}')
-def update_place(request:Places, id:int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+@router.put('/place/update/{id}')
+def update_place(request:AdminUpdatePlace, id:int, db: Session = Depends(get_db), current_user= Depends(get_current_user)):
     place_query = db.query(Place).filter(Place.id == id)
     place = place_query.first()
     role = current_user.role
