@@ -22,8 +22,10 @@ app.add_middleware(
 def root():
     return {'message':'Hey, Welcome to the p2v. You can make your own frontend by using this api.'}
 
-from .routers import user, places, auth, votes
+from .routers import user, places, auth, votes, adminpanel
 app.include_router(places.router)
 app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(votes.router)
+
+app.include_router(adminpanel.router)

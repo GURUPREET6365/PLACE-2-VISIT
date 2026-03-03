@@ -1,20 +1,20 @@
-from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
-# This is pydantic, that used for the data defining that we will recieve from the client.
-from typing import Optional, List
+from fastapi import status, HTTPException, Depends, APIRouter
+# This is pydantic, that used for the data defining that we will receive from the client.
+from typing import List
 from sqlalchemy.orm import Session
 # First creating the instance of the fast api for easy use, we can also do it like:
 # Creating the table that we created in model.py
 from app.database import models
 from app.database.database import engine, get_db
 # This is the pydantic validation model
-from app.database.pydantic_models import Places, UserCreate
+from app.database.pydantic_models import Places
 # This is the pydantic response model
 from app.database.pydantic_models import responsePlace, AllPlaceResponse
-models.Base.metadata.create_all(bind=engine)
 from app.database.models import Place, Votes
 from app.oauth2 import get_current_user, get_current_user_optional
 from sqlalchemy import and_
 
+models.Base.metadata.create_all(bind=engine)
 router = APIRouter(
     prefix='/api',
     tags=['Place']
@@ -24,6 +24,7 @@ router = APIRouter(
 @router.get('/all/place', status_code=status.HTTP_200_OK, response_model=List[AllPlaceResponse])
 def all_place(db: Session = Depends(get_db), current_user = Depends(get_current_user_optional)):
     if current_user:
+        # This is for logged in users
         user_id = current_user.id
         place = db.query(Place).all()
         vote = db.query(Votes).filter(Votes.user_id == user_id).all()
@@ -35,6 +36,7 @@ def all_place(db: Session = Depends(get_db), current_user = Depends(get_current_
             place_id = place_row.id
             is_voted = db.query(Votes).filter(and_(Votes.user_id==user_id, Votes.place_id==place_id)).first()
             if is_voted:
+                # if vote is given by the user
                 place_with_vote.append({
                     "place_name":place_row.place_name,
                     "place_address":place_row.place_address,
@@ -45,6 +47,7 @@ def all_place(db: Session = Depends(get_db), current_user = Depends(get_current_
                     "voted": is_voted.vote,
                 })
             else:
+                # If vote is not touched by the user.
                 place_with_vote.append({
                     "place_name": place_row.place_name,
                     "place_address": place_row.place_address,
@@ -72,7 +75,6 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user = 
 
     # Checking that the place_name or place
     # role = current_user.role
-
     request.user_id = current_user.id
     place = Place(**request.model_dump())
     db.add(place)
@@ -87,17 +89,40 @@ def create_place(request: Places, db: Session = Depends(get_db), current_user = 
     #         detail="Not authorized"
     #     )
 
-@router.get('/place/{id}')
-def specfic_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    place = db.query(Place).filter(Place.id == id).all()
-    vote = db.query(Votes).filter(Votes.user_id == current_user.id, Votes.place_id == id).first()
-    is_voted = None
-
-    if vote:
-        is_voted = vote.vote
+@router.get('/place/{id}', response_model=AllPlaceResponse)
+def specific_place(id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    place = db.query(Place).filter(Place.id == id).first()
+    # place is not available of that id then run this
     if not place:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return {'place':place, 'vote':is_voted} 
+
+    # if place is available then run this
+    vote = db.query(Votes).filter(and_(Votes.user_id == current_user.id, Votes.place_id == id)).first()
+    # checking that is user touched or not.
+
+    if vote is None:
+        place_with_vote = {
+            "place_name": place.place_name,
+            "place_address": place.place_address,
+            "about_place": place.about_place,
+            "pincode": place.pincode,
+            "created_at": place.created_at,
+            "id": place.id,
+            "voted": None,
+        }
+        return place_with_vote
+    else:
+        place_with_vote = {
+            "place_name": place.place_name,
+            "place_address": place.place_address,
+            "about_place": place.about_place,
+            "pincode": place.pincode,
+            "created_at": place.created_at,
+            "id": place.id,
+            "voted": vote.vote,
+        }
+        return place_with_vote
+
 
 
 @router.post('/place/delete/{id}')

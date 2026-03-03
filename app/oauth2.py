@@ -42,9 +42,9 @@ Signature: Created by hashing the encoded header, encoded payload, and a secret 
 
 SECRET_KEY=os.getenv('SECRET_KEY')
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 720
+ACCESS_TOKEN_EXPIRE_MINUTES = 7200
 
-# For google auth
+# For Google auth
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 
 
@@ -116,7 +116,7 @@ def get_current_user_optional(token:str = Depends(oauth2_scheme_optional), db:Se
 
 
 
-
+# this is the token sent by the client, this will be verified and then data of the google logged in user will be extracted.
 def google_token_verification(token, db: Session):
     # print('got token, now verifying...')
     # Extracting the information from the token given by google.

@@ -26,7 +26,7 @@ def create_user(request:UserCreate ,db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == request.email).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Email already exists")
 
-    hashed_password = get_hashed_password(request.password).decode()
+    hashed_password = get_hashed_password(request.password)
 
     new_user = User(
         email=request.email,
@@ -51,4 +51,6 @@ def create_user(request:UserCreate ,db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user = Depends(get_current_user)):
+    if current_user is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'User is not authenticated')
     return current_user
