@@ -124,7 +124,7 @@ def google_token_verification(token, db: Session):
     # Extracting the information from the token given by google.
     request = requests.Request()
     try:
-        # print('verifiying token')
+        # print('verifying token')
         token_info = id_token.verify_oauth2_token(token, request, GOOGLE_CLIENT_ID)
         
         """
@@ -145,6 +145,7 @@ def google_token_verification(token, db: Session):
 
     user = db.query(User).filter(User.google_sub == sub).first()
     if user:
+        # This is because something user changes their email.
         if email != user.email:
             user.email = email
             db.commit()
@@ -154,7 +155,22 @@ def google_token_verification(token, db: Session):
         # If email is matched means the email will be same, user not updated their email.
         jwt_access_token = create_access_token(data={'user_id':user.id, 'email':user.email})
         return jwt_access_token
-    
+
+    # Now I am checking that user exists with their email or not?
+    user_with_email = db.query(User).filter(User.email == email).first()
+    if user_with_email:
+        user_with_email.first_name = first_name
+        user_with_email.last_name = last_name
+        user_with_email.profile_url = profile_url
+        # local_google is used for the suer that can log in with both local and google
+        user_with_email.provider = 'local_google'
+        user_with_email.google_sub = sub
+
+        db.commit()
+
+        jwt_access_token = create_access_token(data={'user_id': user_with_email.id, 'email': user_with_email.email})
+        return jwt_access_token
+
     # If user is not exists then create new user.
     else:
         create_user=User(

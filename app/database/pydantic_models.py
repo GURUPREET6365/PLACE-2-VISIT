@@ -45,6 +45,22 @@ class UserCreate(BaseModel):
     first_name:str
     last_name:str
 
+# This is the model for response the user data
+class AdminUserResponse(BaseModel):
+    id:int
+    email: EmailStr
+    password: Optional[str] = None
+    first_name: str
+    last_name: str
+    provider:Optional[str] = None
+    google_sub:Optional[str] = None
+    profile_url:Optional[str] = None
+    role:str
+    created_at:datetime
+
+    class Config:
+        orm_mode = True
+
 # This is the login model for taking the data from the staff....
 class LoginUser(BaseModel):
     email:EmailStr
@@ -77,3 +93,11 @@ class GoogleAuthToken(BaseModel):
 
 class VoteRequest(BaseModel):
     vote: bool | None = None
+
+# This is for the response of the all votes with user and place
+class AdminVoteResponse(BaseModel):
+    id:int
+    vote:bool | None = None
+    user_id: int
+    place_id: int
+    voted_at: datetime

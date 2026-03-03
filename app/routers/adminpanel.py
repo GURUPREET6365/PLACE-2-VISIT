@@ -5,12 +5,12 @@ from app.oauth2 import get_current_user
 from sqlalchemy.orm import Session
 # Creating the table that we created in model.py
 from app.database.database import get_db
-from app.database.models import User
+from app.database.models import User, Votes
 from app.utilities.utils import check_password
 from app.oauth2 import create_access_token
 from app.database.pydantic_models import LoginUser
-from app.database.pydantic_models import AdminPlaceResponse
-# This place is for admin panel so it will response everything and that's why, I response with the same model that I used to create
+from app.database.pydantic_models import AdminPlaceResponse, AdminUserResponse, AdminVoteResponse
+# This place is for admin panel so it will response everything and that's why, I respond with the same model that I used to create
 from app.database.models import Place
 from typing import List
 
@@ -58,3 +58,20 @@ def admin_place(db: Session = Depends(get_db), current_user = Depends(get_curren
 #     if not staff and admin and also tried to access
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
 
+@router.get('/admin/user', response_model=List[AdminUserResponse])
+def admin_user(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
+    if role == 'admin':
+        user = db.query(User).all()
+        return user
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
+
+@router.get('/admin/votes', response_model=List[AdminVoteResponse])
+def admin_vote(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
+    if role == 'admin':
+        votes = db.query(Votes).all()
+        return votes
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')

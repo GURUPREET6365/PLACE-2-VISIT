@@ -125,7 +125,7 @@ def specific_place(id: int, db: Session = Depends(get_db), current_user = Depend
 
 
 
-@router.post('/place/delete/{id}')
+@router.delete('/place/delete/{id}')
 def delete_place(id:int, db: Session = Depends(get_db), current_user= Depends(get_current_user)):
     place = db.query(Place).filter(Place.id == id).first() # This always return some query, so it can't be empty.
     # .first() always return orm, if found and none if not found.
@@ -136,7 +136,6 @@ def delete_place(id:int, db: Session = Depends(get_db), current_user= Depends(ge
         
         else:
             db.delete(place)
-            print('This place is deleted.')
             db.commit()
 
             return {'success':'The place has been deleted.'}

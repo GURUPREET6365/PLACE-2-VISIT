@@ -20,25 +20,30 @@ router = APIRouter(
     tags=['Users']
 )
 
-@router.post( '/create/user', status_code=status.HTTP_201_CREATED, response_model=UserResponse)
-def create_user(request:UserCreate ,db: Session = Depends(get_db)):
+@router.post( '/create/user', status_code=status.HTTP_201_CREATED)
+def create_user(request:UserCreate ,db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
 
-    if db.query(User).filter(User.email == request.email).first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Email already exists")
+    if role == 'admin':
+        if db.query(User).filter(User.email == request.email).first():
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Email already exists")
 
-    hashed_password = get_hashed_password(request.password)
+        hashed_password = get_hashed_password(request.password)
 
-    new_user = User(
-        email=request.email,
-        password=hashed_password,
-        first_name=request.first_name,
-        last_name=request.last_name
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+        new_user = User(
+            email=request.email,
+            password=hashed_password,
+            first_name=request.first_name,
+            last_name=request.last_name,
+            role='staff'
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
 
-    return new_user
+        return {"message":"User created successfully"}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized User")
 
 
 # @router.get('/get/user/{id}', response_model=UserResponse)
@@ -54,3 +59,20 @@ def me(current_user = Depends(get_current_user)):
     if current_user is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'User is not authenticated')
     return current_user
+
+# This is delete user endpoint
+@router.delete("/user/delete/{id}")
+def delete_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    # Checking the role of the user
+    role = current_user.role
+    if role == 'admin':
+        user = db.query(User).filter(User.id == id).first()
+        if user:
+            db.delete(user)
+            db.commit()
+            return {"message":"user deleted successfully"}
+
+        # if user is not exists then
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="User Not Found")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized User")
