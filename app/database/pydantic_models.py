@@ -97,7 +97,7 @@ class GoogleAuthToken(BaseModel):
     token:str
 
 class VoteRequest(BaseModel):
-    vote: bool
+    vote: bool | None = None
 
 # This is for the response of the all votes with user and place
 class AdminVoteResponse(BaseModel):
