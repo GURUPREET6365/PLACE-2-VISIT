@@ -1,449 +1,276 @@
-# P2V - Places to Visit API 🏛️
+# P2V API (Place-2-Visit)
 
-A comprehensive tourism platform API designed specifically for India, providing authentic tourist place recommendations with community-driven ratings and reviews.
+Backend API for curated tourism discovery.  
+P2V is built with FastAPI + PostgreSQL and provides role-based place management, per-place voting, and multi-category ratings.
 
-## 🌟 Overview
+## Table Of Contents
+- Overview
+- Features
+- Tech Stack
+- Project Structure
+- API Base URLs
+- Authentication And Roles
+- Environment Variables
+- Local Setup
+- Database Migrations
+- Create Admin User
+- Endpoint Reference
+- Request Examples
+- Operational Notes
+- Troubleshooting
 
-P2V (Places to Visit) addresses the gap in India's tourism sector by providing a curated platform where:
-- **Only verified staff/admin can add places** - ensuring authenticity and quality
-- **Users can rate and review places** - providing real feedback from actual visitors
-- **Multi-dimensional ratings** - covering behavior, facilities, cleanliness, and overall experience
-- **Community-driven insights** - helping travelers make informed decisions
+## Overview
+P2V focuses on trusted place discovery:
+- Staff/Admin curate place listings.
+- Users can vote and rate places.
+- Aggregated vote/rating data is returned in place responses.
+- Google Sign-In and local JWT login are both supported.
 
-## 🚀 Key Features
+## Features
+- Role-based access control (`admin`, `staff`, `user`).
+- Local login for `admin` and `staff`.
+- Google token login for all users.
+- Place CRUD with role checks.
+- One vote record per user per place (create-or-update behavior).
+- Multi-category ratings with average aggregation.
+- Admin panel endpoints to inspect users, places, votes, and ratings.
+- Alembic-based migration workflow.
 
-### 🔐 Authentication & Authorization
-- **Local Authentication**: Email/password based login
-- **Google OAuth**: Seamless Google sign-in integration
-- **Role-based Access Control**: Admin, Staff, and User roles with different permissions
-- **JWT Token Security**: Secure API access with bearer tokens
+## Tech Stack
+- Python
+- FastAPI
+- SQLAlchemy ORM
+- PostgreSQL
+- Alembic
+- JWT (`python-jose`)
+- Google token verification (`google-auth`)
+- Bcrypt password hashing
+- Typer CLI (superuser bootstrap)
 
-### 🏛️ Place Management
-- **Curated Content**: Only staff and admin can add new places
-- **Comprehensive Information**: Place name, address, pincode, and creation tracking
-- **CRUD Operations**: Full create, read, update, delete functionality for authorized users
-- **Location-based Organization**: Pincode-based categorization
-
-### ⭐ Rating & Review System
-- **User Voting**: Like/dislike system for places (✅ **IMPLEMENTED**)
-- **Smart Vote Management**: Users can change or remove their votes
-- **Community Feedback**: Real reviews from actual visitors
-- **Multi-dimensional Ratings**: *(Coming Soon)* Rate places on various aspects:
-  - People behavior and hospitality
-  - Facilities and amenities
-  - Cleanliness and maintenance
-  - Overall experience
-
-### 👥 User Management
-- **Profile Management**: User profiles with Google integration support
-- **Role Assignment**: Admin can create staff accounts
-- **Activity Tracking**: Track user contributions and voting history
-
-## 🛠️ Technology Stack
-
-- **Backend Framework**: FastAPI (Python)
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Authentication**: JWT tokens with OAuth2
-- **Database Migrations**: Alembic
-- **Password Security**: Bcrypt hashing
-- **API Documentation**: Auto-generated with FastAPI/Swagger
-
-## 📋 Prerequisites
-
-- Python 3.8+
-- PostgreSQL database
-- Virtual environment (recommended)
-
-## ⚡ Quick Start
-
-### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd PLACE_TO_VISIT
+## Project Structure
+```text
+PLACE-2-VISIT/
+├── app/
+│   ├── database/
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   └── pydantic_models.py
+│   ├── routers/
+│   │   ├── adminpanel.py
+│   │   ├── auth.py
+│   │   ├── places.py
+│   │   ├── ratings.py
+│   │   ├── user.py
+│   │   └── votes.py
+│   ├── utilities/
+│   │   ├── createsuperuser.py
+│   │   └── utils.py
+│   ├── main.py
+│   └── oauth2.py
+├── alembic/
+│   ├── env.py
+│   └── versions/
+├── alembic.ini
+└── README.md
 ```
 
-### 2. Set Up Virtual Environment
-```bash
-python -m venv venv
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
+## API Base URLs
+- App root: `http://localhost:8000/`
+- API root prefix: `http://localhost:8000/api`
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## Authentication And Roles
+Authorization header for protected routes:
+```http
+Authorization: Bearer <jwt-token>
 ```
 
-### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+Roles and access:
+- `admin`: Full access, including staff creation and admin panel.
+- `staff`: Can add/update places and use staff-level admin-place listing.
+- `user`: Can browse places, vote, rate, and fetch own profile.
 
-### 4. Environment Configuration
-Create a `.env` file in the root directory:
+## Environment Variables
+Create `.env` in project root.
+
 ```env
-DATABASE_URL=postgresql://username:password@localhost/p2v_db
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+DATABASE_URL=postgresql://postgres:password@localhost:5432/p2v_db
+ALEMBIC_URL=postgresql://postgres:password@localhost:5432/p2v_db
+SECRET_KEY=replace_with_long_random_secret
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=optional_currently_not_used_by_runtime
+SUPERUSER_EMAIL=admin@example.com
+SUPERUSER_PASSWORD=change_me
+SUPERUSER_FIRST_NAME=Admin
+SUPERUSER_LAST_NAME=User
 ```
 
-### 5. Database Setup
+Variable reference:
+- `DATABASE_URL`: Runtime DB connection string used by SQLAlchemy.
+- `ALEMBIC_URL`: Migration DB URL used by Alembic in `alembic/env.py`.
+- `SECRET_KEY`: JWT signing key.
+- `GOOGLE_CLIENT_ID`: Google token audience validation.
+- `GOOGLE_CLIENT_SECRET`: Present in environment, not currently used in app runtime code.
+- `SUPERUSER_*`: Used by superuser bootstrap CLI.
+
+## Local Setup
+1. Clone repository.
+2. Create and activate virtual environment.
+3. Install dependencies.
+4. Configure `.env`.
+5. Run migrations.
+6. Start API server.
+
+Windows (PowerShell):
 ```bash
-# Run database migrations
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install fastapi uvicorn sqlalchemy alembic psycopg2-binary python-dotenv python-jose[cryptography] bcrypt google-auth typer email-validator
 alembic upgrade head
-```
-
-### 6. Start the Server
-```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
-
-## 📚 API Documentation
-
-### Base URL
-```
-http://localhost:8000/api
-```
-
-### Interactive Documentation
-- **Swagger UI**: `http://localhost:8000/docs`
-
-
----
-
-## 🔑 Authentication Endpoints
-
-### Login
-```http
-POST /api/login
-Content-Type: application/x-www-form-urlencoded
-
-username=user@example.com&password=yourpassword
+macOS/Linux:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install fastapi uvicorn sqlalchemy alembic psycopg2-binary python-dotenv python-jose[cryptography] bcrypt google-auth typer email-validator
+alembic upgrade head
+uvicorn app.main:app --reload
 ```
 
-**Response:**
+## Database Migrations
+```bash
+alembic upgrade head
+alembic history
+alembic current
+```
+
+## Create Admin User
+After setting `SUPERUSER_*` env vars:
+```bash
+python -m app.utilities.createsuperuser
+```
+
+## Endpoint Reference
+
+### Root
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/` | Public | Service health/welcome message. |
+
+### Authentication
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/login` | Public | Local login for `admin`/`staff` using email+password. |
+| POST | `/api/auth/google` | Public | Google ID token login/exchange. |
+
+### Users
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/create/user` | Bearer (`admin`) | Create a `staff` user. |
+| GET | `/api/me` | Bearer | Get current authenticated user profile. |
+| DELETE | `/api/user/delete/{id}` | Bearer (`admin`) | Delete user by ID. |
+
+### Places
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/all/place` | Optional Bearer | List all places with vote/rating aggregates. |
+| GET | `/api/place/{id}` | Bearer | Get one place with full rating category averages. |
+| POST | `/api/add/place` | Bearer (`admin` or `staff`) | Create place. |
+| PUT | `/api/place/update/{id}` | Bearer (`admin` or `staff`) | Update place. |
+| DELETE | `/api/place/delete/{id}` | Bearer (`admin`) | Delete place. |
+
+### Votes
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/vote/{place_id}` | Bearer | Create or update user vote (`true` = like, `false` = dislike). |
+
+### Ratings
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/place/rating/{place_id}` | Bearer | Create or update category ratings for current user. |
+
+### Admin Panel
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/admin/place` | Bearer (`admin` or `staff`) | List all places (admin/staff panel). |
+| GET | `/api/admin/user` | Bearer (`admin`) | List all users. |
+| GET | `/api/admin/votes` | Bearer (`admin`) | List all vote records. |
+| GET | `/api/admin/rating` | Bearer (`admin`) | List all rating records. |
+
+## Request Examples
+
+### 1) Local login (admin/staff)
+```bash
+curl -X POST "http://localhost:8000/api/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"admin@example.com\",\"password\":\"your_password\"}"
+```
+
+Current response:
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token": "eyJhbGciOi..."
+}
+```
+
+### 2) Google login
+```bash
+curl -X POST "http://localhost:8000/api/auth/google" \
+  -H "Content-Type: application/json" \
+  -d "{\"token\":\"google_id_token_from_client\"}"
+```
+
+Current response:
+```json
+{
+  "access_token": "eyJhbGciOi...",
   "token_type": "bearer"
 }
 ```
 
-### Google Authentication
-```http
-POST /api/auth/google
-Content-Type: application/json
-
-{
-  "token": "google-oauth-token"
-}
+### 3) Create vote
+```bash
+curl -X POST "http://localhost:8000/api/vote/1" \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d "{\"vote\":true}"
 ```
 
----
-
-## 👥 User Management Endpoints
-
-### Create Staff User (Admin Only)
-```http
-POST /api/create/user
-Authorization: Bearer <admin-token>
-Content-Type: application/json
-
-{
-  "email": "staff@example.com",
-  "password": "securepassword",
-  "first_name": "John",
-  "last_name": "Doe"
-}
+### 4) Create/update rating
+```bash
+curl -X POST "http://localhost:8000/api/place/rating/1" \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"overall\": 5,
+    \"cleanliness\": 4,
+    \"safety\": 5,
+    \"crowd_behavior\": 4,
+    \"lightning\": 3,
+    \"transport_access\": 4,
+    \"facility_quality\": 4
+  }"
 ```
 
-### Get User Profile
-```http
-GET /api/get/user/{user_id}
-Authorization: Bearer <token>
+### 5) List places (optional token)
+```bash
+curl "http://localhost:8000/api/all/place"
 ```
 
-### Get Current User
-```http
-GET /api/me
-Authorization: Bearer <token>
-```
+## Operational Notes
+- CORS is currently hardcoded to a local-origin list in `app/main.py`.
+- `/api/all/place` supports anonymous access and returns aggregate vote/rating data.
+- `/api/place/{id}` requires authentication and returns per-category averages.
+- Vote values are boolean only (`true` or `false`) in current request schema.
+- Local login endpoint currently issues `token` (not `access_token`) in response.
 
-**Response:**
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "user",
-  "created_at": "2024-01-15T10:30:00Z"
-}
-```
-
----
-
-## 🏛️ Places Management Endpoints
-
-### Get All Places
-```http
-GET /api/all/place
-```
-
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "place_name": "Red Fort",
-    "place_address": "Netaji Subhash Marg, Lal Qila, Chandni Chowk, New Delhi",
-    "pincode": 110006,
-    "user_id": 2,
-    "created_at": "2024-01-15T10:30:00Z",
-    "success": true
-  }
-]
-```
-
-### Add New Place (Staff/Admin Only)
-```http
-POST /api/add/place
-Authorization: Bearer <staff-or-admin-token>
-Content-Type: application/json
-
-{
-  "place_name": "Taj Mahal",
-  "place_address": "Dharmapuri, Forest Colony, Tajganj, Agra, Uttar Pradesh",
-  "pincode": 282001,
-  "user_id": 2
-}
-```
-
-### Get Specific Place
-```http
-GET /api/place/{place_id}
-Authorization: Bearer <token>
-```
-
-### Update Place (Staff/Admin Only)
-```http
-POST /api/place/update/{place_id}
-Authorization: Bearer <staff-or-admin-token>
-Content-Type: application/json
-
-{
-  "place_name": "Updated Place Name",
-  "place_address": "Updated Address",
-  "pincode": 110001,
-  "user_id": 2
-}
-```
-
-### Delete Place (Staff/Admin Only)
-```http
-POST /api/place/delete/{place_id}
-Authorization: Bearer <staff-or-admin-token>
-```
-
----
-
-## ⭐ Voting System ✅
-
-The voting system allows users to like, dislike, or remain neutral on places:
-
-### Vote on a Place
-```http
-POST /api/add/vote/{user_id}/{place_id}
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "vote": true  // true for like, false for dislike, null for neutral
-}
-```
-
-**Response:**
-```json
-{
-  "success": true
-}
-```
-
-### Voting Features
-- **Smart Vote Management**: Users can change their vote anytime
-- **Three States**: Like (true), Dislike (false), Neutral (null)
-- **Automatic Updates**: System handles vote creation and updates seamlessly
-- **User-Specific**: Each user can only have one vote per place
-
-### Get Place Ratings *(Coming Soon)*
-```http
-GET /api/place/{place_id}/ratings
-Authorization: Bearer <token>
-```
-
-**Planned Response:**
-```json
-{
-  "place_id": 1,
-  "total_votes": 150,
-  "likes": 120,
-  "dislikes": 30,
-  "rating_percentage": 80.0,
-  "user_vote": true
-}
-```
-
----
-
-## 🔒 Authentication & Authorization
-
-### Token Usage
-Include the JWT token in the Authorization header for protected endpoints:
-```http
-Authorization: Bearer <your-jwt-token>
-```
-
-### User Roles
-- **Admin**: Full access - can create staff users, manage all places
-- **Staff**: Can add, update, and delete places
-- **User**: Can view places, vote, and manage their own profile
-
----
-
-## 📊 Database Schema
-
-### Users Table
-- `id`: Primary key
-- `email`: Unique email address
-- `password`: Hashed password (for local auth)
-- `first_name`, `last_name`: User names
-- `role`: User role (admin/staff/user)
-- `provider`: Authentication provider (local/google)
-- `google_sub`: Google OAuth subject ID
-- `profile_url`: Profile picture URL
-- `created_at`: Account creation timestamp
-
-### Places Table
-- `id`: Primary key
-- `place_name`: Name of the tourist place
-- `place_address`: Full address
-- `pincode`: Area pincode
-- `user_id`: Foreign key to user who added the place
-- `created_at`: Place addition timestamp
-
-### Votes Table
-- `id`: Primary key
-- `user_id`: Foreign key to voting user
-- `place_id`: Foreign key to rated place
-- `vote`: Boolean (true for like, false for dislike, null for neutral)
-- `voted_at`: Vote timestamp
-
----
-
-## 🚀 Deployment
-
-### Production Setup
-1. Set up PostgreSQL database
-2. Configure environment variables
-3. Run database migrations
-4. Deploy using your preferred method (Docker, Heroku, AWS, etc.)
-
-### Docker Deployment (Recommended)
-```dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-EXPOSE 8000
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
----
-
-## 🤝 Contributing
-
-We welcome contributions to improve P2V! Here's how you can help:
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit your changes**: `git commit -m 'Add amazing feature'`
-4. **Push to the branch**: `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
-
-### Development Guidelines
-- Follow PEP 8 style guidelines
-- Add tests for new features
-- Update documentation for API changes
-- Ensure all tests pass before submitting
-
----
-
-## 📝 API Response Formats
-
-### Success Response
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "Operation completed successfully"
-}
-```
-
-### Error Response
-```json
-{
-  "detail": "Error description",
-  "status_code": 400
-}
-```
-
-
----
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-**Database Connection Error**
-- Verify PostgreSQL is running
-- Check database credentials in `.env`
-- Ensure database exists
-
-**Authentication Errors**
-- Verify JWT token is valid and not expired
-- Check token format: `Bearer <token>`
-- Ensure user has required permissions
-
-**Google OAuth Issues**
-- Verify Google Client ID and Secret
-- Check OAuth redirect URLs
-- Ensure Google OAuth is enabled
-
----
-
-## 📞 Support
-
-For support and questions:
-- **Issues**: Create an issue on GitHub
-- **Documentation**: Check the API docs at `/docs`
-
----
-
-## 🙏 Acknowledgments
-
-- Built with FastAPI framework
-- Inspired by the need for authentic tourism information in India
-- Thanks to all contributors and the open-source community
-
----
-
-**Made with ❤️ for Indian Tourism**
-
-*Helping travelers discover authentic places across incredible India!*
+## Troubleshooting
+- `401 Could not validate credentials`: Ensure JWT is valid and sent as `Bearer <token>`.
+- `401/403 Unauthorized User`: Endpoint role restriction failed.
+- `404 Place with id X not found`: Invalid `place_id` in vote/place APIs.
+- Migration errors: verify `ALEMBIC_URL` and DB connectivity.
+- Runtime DB errors: verify `DATABASE_URL` points to the same DB used for migrations.
 
