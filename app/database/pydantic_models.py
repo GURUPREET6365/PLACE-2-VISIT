@@ -34,6 +34,11 @@ class AllPlaceResponse(BaseModel):
     id:int
     voted:bool | None = None
     created_at: datetime
+    num_likes: int
+    num_dislikes: int
+    overall: float
+    total_user_rated:int
+    is_user_rated: bool | None = None
 
     class Config:
         from_attributes = True
@@ -92,7 +97,7 @@ class GoogleAuthToken(BaseModel):
     token:str
 
 class VoteRequest(BaseModel):
-    vote: bool | None = None
+    vote: bool
 
 # This is for the response of the all votes with user and place
 class AdminVoteResponse(BaseModel):
@@ -101,3 +106,29 @@ class AdminVoteResponse(BaseModel):
     user_id: int
     place_id: int
     voted_at: datetime
+
+class RatingsRequest(BaseModel):
+    user_id:Optional[int] = None
+    place_id:Optional[int] = None
+    overall:int
+    cleanliness:int
+    safety:int
+    crowd_behavior:int
+    lightning:int
+    transport_access:int
+    facility_quality:int
+
+class AdminRatingsResponse(RatingsRequest):
+    id:int
+
+class SpecificPlaceResponseModel(AllPlaceResponse):
+    overall:float
+    cleanliness:float
+    safety:float
+    crowd_behavior:float
+    lightning:float
+    transport_access:float
+    facility_quality:float
+
+    class Config:
+        from_attributes = True
