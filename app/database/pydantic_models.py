@@ -21,8 +21,10 @@ class AdminUpdatePlace(BaseModel):
 # This model is for the admin/staff response.
 class AdminPlaceResponse(Places):
     id:int
-    class Config:
-        orm_mode = True
+
+    model_config = {
+        "from_attributes": True
+    }
 # Here orm_mode is true because when i am taking all the place from db, and direct sending as a list using pydantic, pydantic need to confirm that I can use orm to extract data.
 
 
@@ -40,8 +42,9 @@ class AllPlaceResponse(BaseModel):
     total_user_rated:int
     is_user_rated: bool | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 # users
 class UserCreate(BaseModel):
@@ -63,8 +66,9 @@ class AdminUserResponse(BaseModel):
     role:str
     created_at:datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
 
 # This is the login model for taking the data from the staff....
 class LoginUser(BaseModel):
@@ -81,8 +85,9 @@ class UserResponse(BaseModel):
     provider: Optional[str] = None
     created_at:datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 class Token(BaseModel):
@@ -130,5 +135,6 @@ class SpecificPlaceResponseModel(AllPlaceResponse):
     transport_access:float
     facility_quality:float
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
