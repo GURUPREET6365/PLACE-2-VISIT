@@ -115,7 +115,7 @@ def get_current_user_optional(token:str = Depends(oauth2_scheme_optional), db:Se
             return current_user
         else:
             return None
-
+    return None
 
 
 # this is the token sent by the client, this will be verified and then data of the google logged in user will be extracted.

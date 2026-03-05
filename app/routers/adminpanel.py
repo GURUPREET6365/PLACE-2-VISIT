@@ -13,6 +13,7 @@ from app.database.pydantic_models import AdminPlaceResponse, AdminUserResponse, 
 # This place is for admin panel so it will response everything and that's why, I respond with the same model that I used to create
 from app.database.models import Place
 from typing import List
+from sqlalchemy import String, and_, or_, cast
 
 # creating fastapi router for endpoint
 router = APIRouter(
@@ -58,6 +59,21 @@ def admin_place(db: Session = Depends(get_db), current_user = Depends(get_curren
 #     if not staff and admin and also tried to access
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
 
+# This is admin place search
+@router.get('/admin/place/search', response_model=List[AdminPlaceResponse])
+def admin_search_place(search, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
+    if role == 'admin' or role=='staff':
+        search_pattern = f"%{search}%"
+
+        place = db.query(Place).filter(
+            or_(Place.place_name.ilike(search_pattern), (Place.about_place.ilike(search_pattern)),
+                (Place.place_address.ilike(search_pattern)),
+                (Place.place_address.ilike(search_pattern)),
+                (cast(Place.pincode, String).ilike(search_pattern)))).limit(20).all()
+        return place
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
+
 @router.get('/admin/user', response_model=List[AdminUserResponse])
 def admin_user(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     role = current_user.role
@@ -66,6 +82,22 @@ def admin_user(db: Session = Depends(get_db), current_user = Depends(get_current
         return user
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
+
+
+@router.get('/admin/user/search', response_model=List[AdminUserResponse])
+def admin_search_user(search, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
+    if role == 'admin':
+        search_pattern= f"%{search}%"
+        user = db.query(User).filter(
+            or_(User.first_name.ilike(search_pattern), (User.last_name.ilike(search_pattern)),
+                (User.email.ilike(search_pattern)),
+                (cast(User.google_sub, String).ilike(search_pattern)))).limit(20).all()
+        return user
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
+
+
 
 @router.get('/admin/votes', response_model=List[AdminVoteResponse])
 def admin_vote(db: Session = Depends(get_db), current_user = Depends(get_current_user)):

@@ -140,5 +140,12 @@ def update_place(request:AdminUpdatePlace, id:int, db: Session = Depends(get_db)
         return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
 
-# @router.get('/places/search/')
-# def search_place(search:str = None, db: Session = Depends(get_db), current_user = Depends(get_current_user_optional)):
+@router.get('/places/search/', response_model=List[AllPlaceResponse])
+def search_place(
+    search,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user_optional)
+):
+
+    # print(current_user)
+    return all_place_response(current_user, db, search)

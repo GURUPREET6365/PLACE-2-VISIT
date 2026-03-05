@@ -1,7 +1,7 @@
 # NOTE: utils means the helper functions, that's why it's name is utils
 from app.database.models import Ratings, Place, Votes
 import bcrypt
-from sqlalchemy import and_
+from sqlalchemy import and_, or_, cast, String
 
 def get_hashed_password(plain_password: str) -> str:
     password = bcrypt.hashpw(plain_password.encode("utf-8"),bcrypt.gensalt())
@@ -122,8 +122,19 @@ def calculate_average_rating_all_categories(rating):
         return 0, 0, 0, 0, 0, 0, 0, 0
 
 # This is the function for all place response with vote and ratings.
-def all_place_response(current_user, db):
-    place = db.query(Place).all()
+def all_place_response(current_user, db, search = None):
+
+    """
+    For searching pincode, I am using cast, that will convert pincode into string.
+
+    """
+    search_pattern = f"%{search}%"
+    if search:
+        place = db.query(Place).filter(or_(Place.place_name.ilike(search_pattern), (Place.about_place.ilike(search_pattern)), (Place.place_address.ilike(search_pattern)), (cast(Place.pincode, String).ilike(search_pattern)) )).limit(20).all()
+
+    #     here limit is used, so that only 20 place should return.
+    else:
+        place = db.query(Place).all()
 
     if current_user:
         user_id = current_user.id
