@@ -128,9 +128,15 @@ def all_place_response(current_user, db, search = None):
     For searching pincode, I am using cast, that will convert pincode into string.
 
     """
-    search_pattern = f"%{search}%"
     if search:
-        place = db.query(Place).filter(or_(Place.place_name.ilike(search_pattern), (Place.about_place.ilike(search_pattern)), (Place.place_address.ilike(search_pattern)), (cast(Place.pincode, String).ilike(search_pattern)) )).limit(20).all()
+        search_query = search.split()
+        place = []
+        for all_query in search_query:
+            search_pattern = f"%{all_query}%"
+            place_search = db.query(Place).filter(or_(Place.place_name.ilike(search_pattern), (Place.about_place.ilike(search_pattern)), (Place.place_address.ilike(search_pattern)), (cast(Place.pincode, String).ilike(search_pattern)) )).limit(20).all()
+
+            place.extend(place_search)
+
 
     #     here limit is used, so that only 20 place should return.
     else:

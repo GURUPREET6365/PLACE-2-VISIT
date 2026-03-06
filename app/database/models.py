@@ -101,3 +101,11 @@ class Ratings(Base):
         DateTime(timezone=True),
         server_default=func.now()
     )
+
+class Feedback(Base):
+    __tablename__ = 'feedback'
+    id = Column(Integer, primary_key=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    found_place = Column(Boolean, nullable=True)
+    message = Column(String, nullable=False)

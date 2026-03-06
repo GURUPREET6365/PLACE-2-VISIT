@@ -138,3 +138,15 @@ class SpecificPlaceResponseModel(AllPlaceResponse):
     model_config = {
         "from_attributes": True
     }
+
+class FeedbackRequest(BaseModel):
+    email:EmailStr
+    name:str
+    found_place:Optional[bool] = False
+    message:str
+
+class AdminFeedbackResponse(FeedbackRequest):
+    id:int
+    model_config = {
+        "from_attributes": True
+    }

@@ -3,9 +3,10 @@ from fastapi import status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 # Creating the table that we created in model.py
 from app.database.database import get_db
-from app.database.models import User, Ratings
+from app.database.models import Feedback, Ratings
 from app.oauth2 import get_current_user
-from app.database.pydantic_models import RatingsRequest
+from app.database.pydantic_models import RatingsRequest, FeedbackRequest
+
 from sqlalchemy import and_
 
 router = APIRouter(
@@ -40,3 +41,12 @@ def place_rating(place_id:int,  request:RatingsRequest, db: Session = Depends(ge
         db.commit()
         db.refresh(rating)
         return {"message":"rating successfully created"}
+
+
+@router.post('/feedback', status_code=status.HTTP_201_CREATED)
+def feedback(request:FeedbackRequest, db: Session = Depends(get_db)):
+    # creating a new row in db.
+    new_feedback = Feedback(**request.model_dump())
+    db.add(new_feedback)
+    db.commit()
+    return {"message":"feedback accepted successfully"}

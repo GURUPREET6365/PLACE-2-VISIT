@@ -17,5 +17,4 @@ router = APIRouter(
 @router.post('/auth/google', response_model=Token)
 def google_auth(request: GoogleAuthToken, db: Session = Depends(get_db)):
     access_token = google_token_verification(request.token, db)
-
     return {'access_token': access_token, 'token_type': 'bearer'}

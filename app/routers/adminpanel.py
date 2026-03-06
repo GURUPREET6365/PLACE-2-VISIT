@@ -1,16 +1,15 @@
-
 from fastapi import status, HTTPException, Depends, APIRouter
 # This is pydantic, that used for the data defining that we will receive from the client.
 from app.oauth2 import get_current_user
 from sqlalchemy.orm import Session
 # Creating the table that we created in model.py
 from app.database.database import get_db
-from app.database.models import User, Votes, Ratings
+from app.database.models import User, Votes, Ratings, Feedback
 from app.utilities.utils import check_password
 from app.oauth2 import create_access_token
 from app.database.pydantic_models import LoginUser
-from app.database.pydantic_models import AdminPlaceResponse, AdminUserResponse, AdminVoteResponse, AdminRatingsResponse
-# This place is for admin panel so it will response everything and that's why, I respond with the same model that I used to create
+from app.database.pydantic_models import AdminPlaceResponse, AdminUserResponse, AdminVoteResponse, AdminRatingsResponse, AdminFeedbackResponse
+# This place is for admin panel so it will respond everything and that's why, I respond with the same model that I used to create
 from app.database.models import Place
 from typing import List
 from sqlalchemy import String, and_, or_, cast
@@ -64,13 +63,17 @@ def admin_place(db: Session = Depends(get_db), current_user = Depends(get_curren
 def admin_search_place(search, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     role = current_user.role
     if role == 'admin' or role=='staff':
-        search_pattern = f"%{search}%"
+        search_query = search.split()
+        place = []
+        for all_query in search_query:
+            search_pattern = f"%{all_query}%"
+            place_search = db.query(Place).filter(
+                or_(Place.place_name.ilike(search_pattern), (Place.about_place.ilike(search_pattern)),
+                    (Place.place_address.ilike(search_pattern)),
+                    (cast(Place.pincode, String).ilike(search_pattern)))).limit(20).all()
 
-        place = db.query(Place).filter(
-            or_(Place.place_name.ilike(search_pattern), (Place.about_place.ilike(search_pattern)),
-                (Place.place_address.ilike(search_pattern)),
-                (Place.place_address.ilike(search_pattern)),
-                (cast(Place.pincode, String).ilike(search_pattern)))).limit(20).all()
+            place.extend(place_search)
+
         return place
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
 
@@ -88,11 +91,18 @@ def admin_user(db: Session = Depends(get_db), current_user = Depends(get_current
 def admin_search_user(search, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     role = current_user.role
     if role == 'admin':
-        search_pattern= f"%{search}%"
-        user = db.query(User).filter(
-            or_(User.first_name.ilike(search_pattern), (User.last_name.ilike(search_pattern)),
-                (User.email.ilike(search_pattern)),
-                (cast(User.google_sub, String).ilike(search_pattern)))).limit(20).all()
+        user = []
+
+        search_query = search.split()
+
+        for query in search_query:
+            search_pattern= f"%{query}%"
+            user_search = db.query(User).filter(
+                or_(User.first_name.ilike(search_pattern), (User.last_name.ilike(search_pattern)),
+                    (User.email.ilike(search_pattern)),
+                    (cast(User.google_sub, String).ilike(search_pattern)))).limit(20).all()
+
+            user.extend(user_search)
         return user
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
@@ -116,3 +126,13 @@ def admin_rating(db: Session = Depends(get_db), current_user = Depends(get_curre
         return ratings
     else:
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail="unauthorized user")
+
+
+@router.get('/admin/feedback', response_model=List[AdminFeedbackResponse])
+def admin_feedback(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
+    if role == 'admin' or role == 'staff':
+        feedback = db.query(Feedback).all()
+        return feedback
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized user")
