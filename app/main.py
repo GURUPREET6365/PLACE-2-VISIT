@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.database import engine
-from app.database.database import Base
+from app.database.models import *
 app = FastAPI()
 
 
