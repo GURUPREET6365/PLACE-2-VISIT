@@ -2,10 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.database import engine
 from app.database.models import *
-app = FastAPI()
-
-
-Base.metadata.create_all(bind=engine)
+from contextlib import asynccontextmanager
 
 origins = [
     "http://localhost.tiangolo.com",
@@ -21,6 +18,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    Base.metadata.create_all(bind=engine)
+
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
 
 
 @app.get('/')
