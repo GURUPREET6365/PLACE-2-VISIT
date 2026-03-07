@@ -145,7 +145,7 @@ def google_token_verification(token, db: Session):
 
     user = db.query(User).filter(User.google_sub == sub).first()
     if user:
-        # This is because something user changes their email.
+        # This is because sometime user changes their email.
         if email != user.email:
             user.email = email
             db.commit()

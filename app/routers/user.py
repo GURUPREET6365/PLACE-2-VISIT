@@ -7,7 +7,7 @@ from app.database.database import engine, get_db
 # This is the pydantic validation model
 from app.database.pydantic_models import UserCreate
 # This is the pydantic response model
-from app.database.pydantic_models import UserResponse
+from app.database.pydantic_models import UserResponse, UpdateUser
 models.Base.metadata.create_all(bind=engine)
 from app.database.models import User
 # password hashing.
@@ -45,14 +45,24 @@ def create_user(request:UserCreate ,db: Session = Depends(get_db), current_user 
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized User")
 
+@router.put('/user/update/{id}')
+def user_update(id:int, request: UpdateUser, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    role = current_user.role
 
-# @router.get('/get/user/{id}', response_model=UserResponse)
-# def get_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-#     user = db.query(User).filter(User.id == id).first()
-#
-#     if not user:
-#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'User with id {id} do not exists')
-#     return user
+    user_query = db.query(User).filter(User.id == id)
+    is_user_exist = user_query.first()
+    if role == 'admin':
+        # if user not exists
+        if not is_user_exist:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
+
+
+        user_query.update(request.model_dump(), synchronize_session=False)
+        db.commit()
+        return {"message":"user has been updated successfully"}
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized User")
+
 
 @router.get("/me", response_model=UserResponse)
 def me(current_user = Depends(get_current_user)):

@@ -53,6 +53,12 @@ class UserCreate(BaseModel):
     first_name:str
     last_name:str
 
+class UpdateUser(BaseModel):
+    first_name:str
+    last_name:str
+    role: str
+
+
 # This is the model for response the user data
 class AdminUserResponse(BaseModel):
     id:int

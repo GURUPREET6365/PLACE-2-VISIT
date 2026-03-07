@@ -87,6 +87,8 @@ def admin_user(db: Session = Depends(get_db), current_user = Depends(get_current
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Unauthorized User')
 
 
+
+
 @router.get('/admin/user/search', response_model=List[AdminUserResponse])
 def admin_search_user(search, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     role = current_user.role

@@ -87,12 +87,11 @@ class Ratings(Base):
     __table_args__ = (
         CheckConstraint("overall BETWEEN 1 AND 5"),
         CheckConstraint("cleanliness BETWEEN 1 AND 5"),
-        CheckConstraint("women_safety BETWEEN 1 AND 5"),
+        CheckConstraint("safety BETWEEN 1 AND 5"),
         CheckConstraint("crowd_behavior BETWEEN 1 AND 5"),
-        CheckConstraint("lighting BETWEEN 1 AND 5"),
+        CheckConstraint("lightning BETWEEN 1 AND 5"),
         CheckConstraint("transport_access BETWEEN 1 AND 5"),
-        CheckConstraint("affordability BETWEEN 1 AND 5"),
-        CheckConstraint("facilities_quality BETWEEN 1 AND 5"),
+        CheckConstraint("facility_quality BETWEEN 1 AND 5"),
         UniqueConstraint("user_id", "place_id", name="unique_user_place_rating"),
     )
 
