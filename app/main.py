@@ -7,7 +7,6 @@ origins = [
     "http://127.0.0.1:5500",
     "http://localhost",
     "http://localhost:8080",
-    "https://place-2-visit-production.up.railway.app",
     "https://placeexplorer.kumargurupreet2008.workers.dev",
 ]
 
