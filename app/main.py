@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.database.database import engine
+from app.database.database import Base
 app = FastAPI()
+
+
+Base.metadata.create_all(bind=engine)
 
 origins = [
     "http://localhost.tiangolo.com",
