@@ -1,5 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import googleAuth
+from app.routers.places.api import router as placerouter
+from app.routers.users.adminpanel.places import router as admin_places_router
+from app.routers.users.adminpanel.users import router as admin_users_router
+from app.routers.users.adminpanel.vote_rating_feedback import router as admin_activity_router
+from app.routers.users.api import router as userrouter
+from app.routers.votes_ratings_feedback.feedback import router as feedbackrouter
+from app.routers.votes_ratings_feedback.ratings import router as ratingsrouter
+from app.routers.votes_ratings_feedback.votes import router as votesrouter
+
 app = FastAPI()
 
 origins = [
@@ -23,12 +34,12 @@ app.add_middleware(
 def root():
     return {'message':'Hey, Welcome to the p2v. You can make your own frontend by using this api.'}
 
-from .routers import user, places, auth, votes, adminpanel, ratings
-app.include_router(places.router)
-app.include_router(user.router)
-app.include_router(auth.router)
-app.include_router(votes.router)
-
-app.include_router(adminpanel.router)
-
-app.include_router(ratings.router)
+app.include_router(placerouter)
+app.include_router(userrouter)
+app.include_router(googleAuth.router)
+app.include_router(votesrouter)
+app.include_router(feedbackrouter)
+app.include_router(ratingsrouter)
+app.include_router(admin_places_router)
+app.include_router(admin_users_router)
+app.include_router(admin_activity_router)

@@ -3,7 +3,6 @@ import os
 import typer
 # import database
 from app.database.database import sessionLocal
-from sqlalchemy.orm import Session
 from app.database.models import User
 from app.utilities.utils import get_hashed_password
 
@@ -19,7 +18,7 @@ here I not using the Depends because it is for fastapi, and so we are taking hte
 
 """
 NOTE: RUN COMMAND IS:
-python -m app.utilities.createsuperuser
+python -m app.routers.users.adminpanel.utilities.createsuperuser
 """
 
 @app.command()
