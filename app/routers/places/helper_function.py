@@ -10,7 +10,8 @@ from app.routers.votes_ratings_feedback.utilities.calc_votes import calculate_vo
 
 # This is the function for all place response with vote and ratings.
 def all_place_response(current_user, db, place=None):
-    place = db.all_place_query()
+    if place is None:
+        place = db.all_place_query()
     if current_user:
         user_id = current_user.id
         # This is for logged-in users
@@ -95,7 +96,7 @@ def all_place_response(current_user, db, place=None):
 def search_place_endpoint(current_user, db_ops, search):
     if search:
         search_query = search.split()
-        place = db_ops.search_all_place()
+        place = db_ops.search_all_place(search_query)
         return all_place_response(current_user, db_ops, place)
 
 

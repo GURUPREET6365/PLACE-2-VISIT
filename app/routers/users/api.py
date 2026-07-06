@@ -1,4 +1,4 @@
-from fastapi import status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter, Response
 # This is pydantic, that used for the data defining that we will recieve from the client.
 from sqlalchemy.orm import Session
 # Creating the table that we created in model.py
@@ -6,10 +6,14 @@ from app.database.database import get_db
 # This is the pydantic validation model
 # This is the pydantic response model
 from app.routers.users.pydanticModels import LoginUser, UpdateUser, UserCreate, UserResponse
-from app.database.models import User
-# password hashing.
-from app.utilities.utils import check_password, get_hashed_password
-from app.utilities.oauth2 import create_access_token, get_current_user
+from app.utilities.oauth2 import get_current_user
+from app.routers.users.db_ops import UsersDbOps
+from app.routers.users.helper_function import (
+    create_staff_user_response,
+    delete_user_response,
+    login_response,
+    update_user_response,
+)
 
 
 router = APIRouter(
@@ -18,74 +22,31 @@ router = APIRouter(
 )
 
 
+def db_ops_init(db: Session = Depends(get_db)):
+    return UsersDbOps(db)
+
+
 # This is login endpoint.
 @router.post('/login')
-def login(user_cred: LoginUser, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_cred.email).first()
-
-    # Verifying that is user exists or not, if exists then login and if not then send response that user is not registered.
-    if not user:
-        # print('user is not known')
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f'Invalid Credentials')
-
-    # print('matching password')
-    if user.role == 'staff' or user.role == 'admin':
-
-        is_match_pwd = check_password(user_cred.password, str(user.password))
-
-        # Checking that the password matches or not.
-        if not is_match_pwd:
-            # print('password did not match')
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid Credentials')
-
-        # if password matches then it will create the jwt token.
-        access_token = create_access_token(data={'user_id': user.id, 'email': user.email})
-        return {"token":access_token}
-
-#     if login user is not the staff or admin then it will not log into
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f'Unauthorized User')
+def login(user_cred: LoginUser, db_ops: Session = Depends(db_ops_init)):
+    return login_response(user_cred, db_ops)
 
 
 @router.post( '/create/user', status_code=status.HTTP_201_CREATED)
-def create_user(request:UserCreate ,db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def create_user(request: UserCreate, db_ops: Session = Depends(db_ops_init), current_user = Depends(get_current_user)):
     role = current_user.role
 
     if role == 'admin':
-        if db.query(User).filter(User.email == request.email).first():
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail= "Email already exists")
-
-        hashed_password = get_hashed_password(request.password)
-
-        new_user = User(
-            email=request.email,
-            password=hashed_password,
-            first_name=request.first_name,
-            last_name=request.last_name,
-            role='staff'
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-
-        return {"message":"User created successfully"}
+        return create_staff_user_response(request, db_ops)
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized User")
 
 @router.put('/user/update/{id}')
-def user_update(id:int, request: UpdateUser, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def user_update(id: int, request: UpdateUser, db_ops: Session = Depends(db_ops_init), current_user = Depends(get_current_user)):
     role = current_user.role
 
-    user_query = db.query(User).filter(User.id == id)
-    is_user_exist = user_query.first()
     if role == 'admin':
-        # if user not exists
-        if not is_user_exist:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'The place of the id:{id} is not found.')
-
-
-        user_query.update(request.model_dump(), synchronize_session=False)
-        db.commit()
-        return {"message":"user has been updated successfully"}
+        return update_user_response(id, request, db_ops)
 
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized User")
 
@@ -98,17 +59,21 @@ def me(current_user = Depends(get_current_user)):
 
 # This is delete user endpoint
 @router.delete("/user/delete/{id}")
-def delete_user(id:int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+def delete_user(id: int, db_ops: Session = Depends(db_ops_init), current_user = Depends(get_current_user)):
     # Checking the role of the user
     role = current_user.role
     if role == 'admin':
-        user = db.query(User).filter(User.id == id).first()
-        if user:
-            db.delete(user)
-            db.commit()
-            return {"message":"user deleted successfully"}
-
-        # if user is not exists then
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="User Not Found")
+        return delete_user_response(id, db_ops)
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized User")
+
+
+@router.post('/logout', status_code=status.HTTP_200_OK)
+def logout(response: Response):
+    # Instructs the browser to clear the cookie by setting it to expire in the past
+    response.delete_cookie(
+        key="access_token", 
+        path="/", 
+        samesite="lax" # Match the SameSite configuration used when setting the cookie
+    )
+    return {"message": "Logged out successfully"}

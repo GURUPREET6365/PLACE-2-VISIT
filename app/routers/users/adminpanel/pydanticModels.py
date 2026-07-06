@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 from app.routers.places.pydanticModels import Places
-from app.database.pydantic_models import FeedbackRequest, RatingsRequest
+from app.routers.votes_ratings_feedback.pydanticModels import FeedbackRequest, RatingsRequest
 
 
 

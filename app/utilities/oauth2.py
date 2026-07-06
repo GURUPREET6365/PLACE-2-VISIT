@@ -130,17 +130,25 @@ def google_token_verification(token, db: Session):
     # print('got token, now verifying...')
     # Extracting the information from the token given by google.
     request = requests.Request()
+    # print(request)
     try:
         # print('verifying token')
-        token_info = id_token.verify_oauth2_token(token, request, GOOGLE_CLIENT_ID)
+        token_info = id_token.verify_oauth2_token(
+            token, 
+            request, 
+            "788471062927-namh05hvpv0hcho55ji7it32001nipqo.apps.googleusercontent.com",
+            clock_skew_in_seconds=10
+        )
+        # print(token_info)
+        # print("hello I am here.")
         
         """
         # print(token_info)
         {'iss': 'https://accounts.google.com', 'azp': '788471062927-m9k1jhqtp4j1gr2be8fg4bga08mi4knd.apps.googleusercontent.com', 'aud': '788471062927-m9k1jhqtp4j1gr2be8fg4bga08mi4knd.apps.googleusercontent.com', 'sub': '108517204962045586134', 'email': 'streakmanager001@gmail.com', 'email_verified': True, 'nbf': 1769369179, 'name': 'Streak Manager', 'picture': 'https://lh3.googleusercontent.com/a/ACg8ocLM1jRuZwyU5xY5GkrajnKtPm1WqjMJAjL7rd-hDR_pUj3vYw=s96-c', 'given_name': 'Streak', 'family_name': 'Manager', 'iat': 1769369479, 'exp': 1769373079, 'jti': '842407703ec41d076b926174dd1a2e7bcc446d84'}
         """
 
-    except Exception:
-        # print(error)
+    except Exception as error:
+        print(error)
         # print('Token got wrong')
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid Token')
 
@@ -164,40 +172,35 @@ def google_token_verification(token, db: Session):
         return True, jwt_access_token
 
     # Now I am checking that user exists with their email or not?
-    # user_with_email = db.query(User).filter(User.email == email).first()
-    # if user_with_email:
-    #     user_with_email.first_name = first_name
-    #     user_with_email.last_name = last_name
-    #     user_with_email.profile_url = profile_url
-    #     # # local_google is used for the user that can log in with both local and google
-    #     # user_with_email.provider = 'local_google'
-    #     # user_with_email.google_sub = sub
+    user_with_email = db.query(User).filter(User.email == email).first()
+    if user_with_email:
+        user_with_email.first_name = first_name
+        user_with_email.last_name = last_name
+        user_with_email.profile_url = profile_url
+        # # local_google is used for the user that can log in with both local and google
+        # user_with_email.provider = 'local_google'
+        # user_with_email.google_sub = sub
 
-    #     db.commit()
+        db.commit()
 
-    #     jwt_access_token = create_access_token(data={'user_id': user_with_email.id, 'email': user_with_email.email})
-    #     return jwt_access_token
+        jwt_access_token = create_access_token(data={'user_id': user_with_email.id, 'email': user_with_email.email})
+        return True, jwt_access_token
 
     # If user is not exists then create new user.
     else:
-        # checking that is that email stored in db. If yes then he will be either staff or admin.
-        is_email_exist=db.query(User).filter(User.email==email).first()
-        if not is_email_exist:
 
-            create_user=User(
-                email=email, 
-                first_name=first_name,
-                google_sub=sub, 
-                last_name=last_name,
-                profile_url=profile_url,
-                provider='google'
-            )
-            db.add(create_user)
-            db.commit()
-            db.refresh(create_user)
+        create_user=User(
+            email=email, 
+            first_name=first_name,
+            google_sub=sub, 
+            last_name=last_name,
+            profile_url=profile_url,
+            provider='google'
+        )
+        db.add(create_user)
+        db.commit()
+        db.refresh(create_user)
 
-            jwt_access_token = create_access_token(data={'user_id':create_user.id, 'email':create_user.email})
-            return True, jwt_access_token
-        
-        return False, "Email already exists. If you are an staff or admin, just login."
-        
+        jwt_access_token = create_access_token(data={'user_id':create_user.id, 'email':create_user.email})
+        return True, jwt_access_token
+

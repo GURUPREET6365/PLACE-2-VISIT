@@ -3,8 +3,9 @@ from fastapi import status, Depends, APIRouter
 from sqlalchemy.orm import Session
 # Creating the table that we created in model.py
 from app.database.database import get_db
-from app.database.models import Feedback
-from app.database.pydantic_models import FeedbackRequest
+from app.routers.votes_ratings_feedback.pydanticModels import FeedbackRequest
+from app.routers.votes_ratings_feedback.db_ops import VoteRatingFeedbackDbOps
+from app.routers.votes_ratings_feedback.helper_function import feedback_response
 
 router = APIRouter(
     prefix='/api',
@@ -12,10 +13,10 @@ router = APIRouter(
 )
 
 
+def db_ops_init(db: Session = Depends(get_db)):
+    return VoteRatingFeedbackDbOps(db)
+
+
 @router.post('/feedback', status_code=status.HTTP_201_CREATED)
-def feedback(request:FeedbackRequest, db: Session = Depends(get_db)):
-    # creating a new row in db.
-    new_feedback = Feedback(**request.model_dump())
-    db.add(new_feedback)
-    db.commit()
-    return {"message":"feedback accepted successfully"}
+def feedback(request: FeedbackRequest, db_ops: Session = Depends(db_ops_init)):
+    return feedback_response(request, db_ops)
